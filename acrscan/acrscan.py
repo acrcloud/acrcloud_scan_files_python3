@@ -12,7 +12,7 @@ import csv
 from .utils import is_title_similar_or_equal, get_human_readable_time
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 class ACRCloudScan:

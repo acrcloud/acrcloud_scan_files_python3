@@ -21,7 +21,7 @@ with open('config.yaml', 'r') as f:
         logging.error(exc)
 
 acrcloud_config = config_dict.get('acrcloud')
-
+acrcloud_config.get('')
 logging.basicConfig(level=logging.INFO)
 
 if acrcloud_config.get('debug'):
@@ -50,6 +50,7 @@ class OptionRequiredIf(click.Option):
 def main(target, output, with_duration, filter_results):
     acr = ACRCloudScan(acrcloud_config)
     acr.with_duration = with_duration
+
     if output:
         if not os.path.exists(output):
             open(output, 'w+')

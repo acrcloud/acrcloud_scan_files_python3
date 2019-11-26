@@ -11,8 +11,6 @@ logger = logging.getLogger(__name__)
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-local_lib_filename = f'{here}/acrcloud/acrcloud_extr_tool.so'
-
 BASE_URL = 'https://raw.githubusercontent.com/acrcloud/acrcloud_sdk_python/master'
 
 download_urls = {
@@ -23,12 +21,12 @@ download_urls = {
     'win32': f'{BASE_URL}/windows/win32/python3/acrcloud/acrcloud_extr_tool.pyd'
 }
 
-library_filename = {
-    'mac': f'acrcloud_extr_tool.so',
-    'linux_64': f'acrcloud_extr_tool.so',
-    'linux_32': f'acrcloud_extr_tool.so',
-    'win64': f'acrcloud_extr_tool.pyd',
-    'win32': f'acrcloud_extr_tool.pyd'
+library_filenames = {
+    'mac': f'{here}/acrcloud/acrcloud_extr_tool.so',
+    'linux_64': f'{here}/acrcloud/acrcloud_extr_tool.so',
+    'linux_32': f'{here}/acrcloud/acrcloud_extr_tool.so',
+    'win64': f'{here}/acrcloud/acrcloud_extr_tool.pyd',
+    'win32': f'{here}/acrcloud/acrcloud_extr_tool.pyd'
 }
 
 
@@ -39,6 +37,7 @@ def current_platform() -> str:
     """
     system = platform.system()
     arch = platform.machine().replace('_', '-')
+
     if system.startswith('Linux'):
         if arch.endswith('64'):
             return 'linux_64'
@@ -92,7 +91,7 @@ def download(url: str) -> BytesIO:
             process_bar.update(len(chunk))
         process_bar.close()
 
-        with open(local_lib_filename, 'wb') as f:
+        with open(library_filenames[current_platform()], 'wb') as f:
             f.write(_data.getvalue())
 
     logger.warning('\nACRCloud library download done.')
@@ -113,7 +112,7 @@ def check_lib_exists() -> bool:
     Check if the library exists
     :return:
     """
-    if os.path.exists(local_lib_filename):
+    if os.path.exists(library_filenames[current_platform()]):
         return True
     return False
 

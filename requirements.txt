@@ -3,4 +3,5 @@ python-dateutil
 tqdm
 fuzzywuzzy
 ffmpeg-python
-python-Levenshtein
+urllib3
+PyYAML
