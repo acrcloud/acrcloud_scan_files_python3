@@ -358,7 +358,7 @@ class ACRCloudScan:
 
                                 results[i].title = sr.title
                                 results[i].acrid = sr.acrid
-                                if results[i].audio_id:
+                                if hasattr(results[i], 'audio_id'):
                                     results[i].audio_id = sr.audio_id
                                     results[i].bucket_id = sr.bucket_id
                                 results[i].score = 100
