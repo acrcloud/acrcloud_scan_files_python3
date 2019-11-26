@@ -1,0 +1,8 @@
+acrcloud:
+  host: xxx.acrcloud.com
+  access_key: xxx
+  access_secret: xxx
+  recognize_type: 0
+  timeout: 10
+  debug: false
+
