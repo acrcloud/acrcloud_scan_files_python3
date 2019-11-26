@@ -32,7 +32,6 @@ class OptionRequiredIf(click.Option):
 
     def full_process_value(self, ctx, value):
         value = super(OptionRequiredIf, self).full_process_value(ctx, value)
-        print(ctx.params.keys())
         if not ctx.params.get('with_duration') and value:
             msg = 'Required --with-duration, if you want filter pls add --with-duration'
             raise click.MissingParameter(ctx=ctx, param=self, message=msg)

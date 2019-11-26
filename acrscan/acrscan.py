@@ -12,7 +12,7 @@ import csv
 from .utils import is_title_similar_or_equal, get_human_readable_time
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class ACRCloudScan:
@@ -47,6 +47,8 @@ class ACRCloudScan:
         start_time_s = int(start_time_ms / 1000)
 
         result = self._recognizer.recognize_by_file(filename, start_time_s, recognize_length_s)
+
+        logger.debug(result)
 
         return json.loads(result)
 
@@ -98,7 +100,6 @@ class ACRCloudScan:
             end_time_ms=start_time_ms + self._recognize_length_ms,
             played_duration_ms=self._recognize_length_ms,
             score=0,
-            title=response.status.msg,
         )
 
         custom_file_result = CustomFileResult(
@@ -108,7 +109,6 @@ class ACRCloudScan:
             end_time_ms=start_time_ms + self._recognize_length_ms,
             played_duration_ms=self._recognize_length_ms,
             score=0,
-            title=response.status.msg,
         )
 
         if response.status.code == ACRCloudStatusCode.ACR_ERR_CODE_OK:
@@ -159,6 +159,7 @@ class ACRCloudScan:
             custom_files_results = response.metadata.custom_files
 
             if custom_files_results:
+
                 primary_result = custom_files_results[0]
 
                 keys = primary_result.to_dict()
