@@ -492,7 +492,7 @@ class ACRCloudScan:
         keys = list(results[0].to_dict().keys())
         # keys.append('played_duration_s')
 
-        with open(report_filename, 'w') as f:
+        with open(report_filename, 'w', encoding="utf-8") as f:
             dict_writer = csv.DictWriter(f, keys)
             dict_writer.writeheader()
             for r in results:
