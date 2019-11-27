@@ -6,6 +6,7 @@ import os
 import logging
 from fuzzywuzzy import fuzz
 import time
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,10 @@ def is_title_similar_or_equal(title_a: str, title_b: str, threshold: int) -> boo
     :param threshold:
     :return:
     """
+    # avoid None == None and Avoid computing
+    if title_a == title_b:
+        return True
+
     if fuzz.token_set_ratio(title_a, title_b) >= threshold:
         return True
     return False
@@ -59,3 +64,10 @@ def get_human_readable_time(seconds: int) -> str:
     :return:
     """
     return time.strftime("%H:%M:%S", time.gmtime(seconds))
+
+
+
+
+def trim_invalid_file_path_chars(path: str) -> str:
+    regex = re.compile(r'[\\/:*?"<>|]')
+    return regex.sub(' ', path)

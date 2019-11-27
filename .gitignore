@@ -107,3 +107,6 @@ venv.bak/
 
 # idea
 .idea/
+
+# lib
+acrscan/acrcloud/acrcloud_extr_tool.*

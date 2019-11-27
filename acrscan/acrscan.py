@@ -26,6 +26,7 @@ class ACRCloudScan:
         self.results_counter = {}
         self.scan_type = ScanType.SCAN_TYPE_BOTH
         self.with_duration = False
+        self.filter_results = False
 
     def _get_file_duration_ms(self, filename: str) -> int:
         """
@@ -487,12 +488,14 @@ class ACRCloudScan:
         :param report_filename:
         :return:
         """
-        if not results:
+        if not any(results):
             return
-        keys = list(results[0].to_dict().keys())
-        # keys.append('played_duration_s')
 
-        with open(report_filename, 'w', encoding="utf-8") as f:
+        keys = list(results[0].to_dict().keys())
+        # using utf-8-sig: Avoid using excel display wrong characters. F Microsoft.
+        suffix = '.csv'
+        report_filename = f'{report_filename}{suffix}'
+        with open(report_filename, 'w', encoding="utf-8-sig") as f:
             dict_writer = csv.DictWriter(f, keys)
             dict_writer.writeheader()
             for r in results:
@@ -505,99 +508,98 @@ class ACRCloudScan:
 
         logging.info(f'The results are exported in {report_filename}')
 
-    def scan_file(self, filename: str, output: str, filter_result: bool) -> None:
+    @staticmethod
+    def export_to_json(results: list, report_filename: str):
         """
-        scan a file
-        :param filename:
-        :param output:
-        :param filter_result
+        export the result to json format
+        :param results:
+        :param report_filename:
         :return:
         """
-        if not os.path.exists(filename):
-            logger.warning(f'Not Exist {filename}')
+        if not any(results):
             return
 
-        if not output:
-            prefix = filename
+        suffix = '.json'
+        report_filename = f'{report_filename}{suffix}'
+        with open(report_filename, 'w', encoding="utf-8") as f:
+            f.write(json.dumps(results))
+        logging.info(f'The results are exported in {report_filename}')
+
+    def export(self, results: list, report_filename: str, output_format):
+        if output_format == 'json':
+            self.export_to_json(results, report_filename)
         else:
-            prefix = output + os.path.splitext(filename)[1]
+            self.export_to_csv(results, report_filename)
 
-        music_output = f'{prefix}_music.csv'
-        custom_file_output = f'{prefix}_custom_file.csv'
-
-        merged_music_output = f'{prefix}_merged_music.csv'
-        merged_custom_file_output = f'{prefix}_merged_custom_file.csv'
-
-        filtered_music_output = f'{prefix}_filtered_music.csv'
-        filtered_custom_file_output = f'{prefix}_filtered_custom_file.csv'
-
-        music_results, custom_file_results = self._scan(filename)
-
-        if self.with_duration:
-            merged_music_results = self._merge_results_with_simple_filter(music_results)
-            merged_custom_file_results = self._merge_results_with_simple_filter(custom_file_results)
-
-            self.export_to_csv(merged_music_results, merged_music_output)
-            self.export_to_csv(merged_custom_file_results, merged_custom_file_output)
-
-            if filter_result:
-                filtered_music_results = self._filter_results(merged_music_results)
-                filtered_custom_file_results = self._filter_results(merged_custom_file_results)
-                self.export_to_csv(filtered_music_results, filtered_music_output)
-                self.export_to_csv(filtered_custom_file_results, filtered_custom_file_output)
-
-        self.export_to_csv(music_results, music_output)
-        self.export_to_csv(custom_file_results, custom_file_output)
-
-    def scan_folder(self, folder_name: str, output: str, filter_result: bool) -> None:
+    def scan_target(self, target: str, output: str, output_format: str) -> None:
         """
-        Scan a folder
-        :param folder_name:
-        :param output:
-        :param filter_result
+        scan a target (a file or a folder)
+        :param target: target path
+        :param output: output path (must be a folder name)
+        :param output_format: the format of the output report json or csv
         :return:
         """
-        if not os.path.exists(folder_name):
-            logger.warning(f'Not Exist {folder_name}')
+
+        if not os.path.exists(target):
+            logging.warning(f'Not Exist {target}')
             return
-
-        if not output:
-            prefix = folder_name
-        else:
-            prefix = output
-
-        music_output = f'{prefix}_music.csv'
-        custom_file_output = f'{prefix}_custom_file.csv'
-
-        merged_music_output = f'{prefix}_merged_music.csv'
-        merged_custom_file_output = f'{prefix}_merged_custom_file.csv'
-
-        filtered_music_output = f'{prefix}_filtered_music.csv'
-        filtered_custom_file_output = f'{prefix}_filtered_custom_file.csv'
-
-        filenames = [f'{folder_name}/{i}' for i in os.listdir(folder_name)]
 
         total_music_results = []
         total_custom_file_results = []
 
-        for file in filenames:
-            logger.info(f'scan file {folder_name}/{file}')
-            music_results, custom_file_results = self._scan(file)
-            total_music_results += music_results
-            total_custom_file_results += custom_file_results
+        if os.path.isfile(target):
+            music_results, custom_file_results = self._scan(target)
+            total_music_results = music_results
+            total_custom_file_results = custom_file_results
+        elif os.path.isdir(target):
+            filenames = [f'{target}/{i}' for i in os.listdir(target)]
+            for file in filenames:
+                music_results, custom_file_results = self._scan(file)
+                total_music_results += music_results
+                total_custom_file_results += custom_file_results
+        else:
+            logging.error(f'Unsupported target {target}')
+
+        prefix = target
+
+        if output and not os.path.isdir(output):
+            os.makedirs(output)
+            prefix = output
+
+        output_filenames = {
+            'music': f'{prefix}_music',
+            'custom': f'{prefix}_custom_file',
+            'merged_music': f'{prefix}_with_duration_music',
+            'merged_custom_file': f'{prefix}_with_duration_custom_file',
+            'filtered_music': f'{prefix}_filtered_music',
+            'filtered_custom_file': f'{prefix}_filtered_custom_file',
+        }
+
+        final_music_results = total_music_results
+        final_custom_file_results = total_custom_file_results
+
+        music_output_filename = output_filenames['music']
+        custom_file_output_filename = output_filenames['custom']
 
         if self.with_duration:
             merged_music_results = self._merge_results_with_simple_filter(total_music_results)
             merged_custom_file_results = self._merge_results_with_simple_filter(total_custom_file_results)
 
-            self.export_to_csv(merged_music_results, merged_music_output)
-            self.export_to_csv(merged_custom_file_results, merged_custom_file_output)
+            final_music_results = merged_music_results
+            final_custom_file_results = merged_custom_file_results
 
-            if filter_result:
+            music_output_filename = output_filenames['merged_music']
+            custom_file_output_filename = output_filenames['merged_custom_file']
+
+            if self.filter_results:
                 filtered_music_results = self._filter_results(merged_music_results)
                 filtered_custom_file_results = self._filter_results(merged_custom_file_results)
-                self.export_to_csv(filtered_music_results, filtered_music_output)
-                self.export_to_csv(filtered_custom_file_results, filtered_custom_file_output)
 
-        self.export_to_csv(total_music_results, music_output)
-        self.export_to_csv(total_custom_file_results, custom_file_output)
+                final_music_results = filtered_music_results
+                final_custom_file_results = filtered_custom_file_results
+
+                music_output_filename = output_filenames['filtered_music']
+                custom_file_output_filename = output_filenames['filtered_custom_file']
+
+        self.export(final_music_results, music_output_filename, output_format)
+        self.export(final_custom_file_results, custom_file_output_filename, output_format)

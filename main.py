@@ -16,7 +16,6 @@ import click
 with open('config.yaml', 'r') as f:
     try:
         config_dict = yaml.safe_load(f)
-        logging.info(config_dict)
     except yaml.YAMLError as exc:
         logging.error(exc)
 
@@ -39,27 +38,29 @@ class OptionRequiredIf(click.Option):
 
 
 @click.command()
-@click.option('--target', '-t', type=click.Path(exists=True), required=True,
+@click.option('--target', '-t',
               help='The target need to scan (a folder or a file).')
-@click.option('--output', '-o', default='', type=click.Path(),
+@click.option('--output', '-o', default='',
               help='Output result to this folder. (Must be a folder path)')
+@click.option('--format', 'output_format', type=click.Choice(['csv', 'json']),
+              help='output format.(csv or json)')
 @click.option('--with-duration/--no-duration', '-w', default=False,
               help='Add played duration to the result')
 @click.option('--filter-results/--no-filter', default=False,
               help='Enable filter.(It must be used when the with-duration option is on)', cls=OptionRequiredIf)
-def main(target, output, with_duration, filter_results):
+def main(target, output, output_format, with_duration, filter_results):
+    ctx = click.get_current_context()
+    if not any(v for v in ctx.params.values()):
+        click.echo(ctx.get_help())
+        ctx.exit()
+
     acr = ACRCloudScan(acrcloud_config)
     acr.with_duration = with_duration
-
+    acr.filter_results = filter_results
     if output:
         if not os.path.exists(output):
             open(output, 'w+')
-    if os.path.isdir(target):
-        acr.scan_folder(target, output, filter_results)
-    elif os.path.isfile(target):
-        acr.scan_file(target, output, filter_results)
-    else:
-        logging.warning("Unsupported target type")
+    acr.scan_target(target, output, output_format)
 
 
 if __name__ == '__main__':
