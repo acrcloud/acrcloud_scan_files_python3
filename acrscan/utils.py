@@ -11,13 +11,14 @@ import re
 logger = logging.getLogger(__name__)
 
 
-def convert_media_file_to_wav(media_filename: str) -> str:
+def convert_media_file_to_wav(media_filename: str, ffmpeg_path='ffmpeg') -> str:
     """
     Convert the media file to wav.
+    :param ffmpeg_path: ffmpeg bin's path
     :param media_filename:
     :return:
     """
-
+    ffmpeg.run()
     if os.path.splitext(media_filename)[1] == '.wav':
         logger.debug(f'source file is already wav format, there is no need to convert the format. {media_filename}')
         return media_filename
@@ -30,7 +31,7 @@ def convert_media_file_to_wav(media_filename: str) -> str:
 
     logger.debug(f'convert the media file to wav')
 
-    ffmpeg.input(media_filename).output(wav_filename, **{'loglevel': 'quiet', 'ac': 1, 'ar': 8000}).run()
+    ffmpeg.input(media_filename).output(wav_filename, **{'loglevel': 'quiet', 'ac': 1, 'ar': 8000}).run(cmd=ffmpeg_path)
 
     logger.debug(f'Finished the convert task')
 

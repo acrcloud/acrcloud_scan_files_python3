@@ -232,9 +232,6 @@ class ACRCloudScan:
         :return:
         """
 
-        # results_a = self.music_results[results_a_index]
-        # results_b = self.music_results[results_b_index]
-
         results_a = results[results_a_index]
         results_b = results[results_b_index]
 

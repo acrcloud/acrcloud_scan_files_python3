@@ -17,7 +17,6 @@ import hashlib
 import urllib.request
 import urllib.parse
 import datetime
-
 import acrcloud_extr_tool
 
 '''

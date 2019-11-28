@@ -6,9 +6,6 @@ import platform
 import logging
 import urllib3
 from io import BytesIO
-from zipfile import ZipFile
-from pathlib import Path
-import stat
 
 logger = logging.getLogger(__name__)
 
@@ -31,21 +28,6 @@ library_filenames = {
     'win64': f'{here}/acrcloud/acrcloud_extr_tool.pyd',
     'win32': f'{here}/acrcloud/acrcloud_extr_tool.pyd'
 }
-
-ffmpeg_urls = {
-    'mac': 'https://ffmpeg.zeranoe.com/builds/macos64/static/ffmpeg-20191126-59d264b-macos64-static.zip',
-    'win64': 'https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-20191126-59d264b-win64-static.zip',
-    'win32': 'https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-20191126-59d264b-win32-static.zip',
-    'linux_64': 'https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz',
-    'linux_32': 'https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-i686-static.tar.xz'
-
-}
-ffmpeg_filenames = {
-    'mac': 'ffmpeg',
-    'win64': 'ffmpeg.exe',
-    'win32': 'ffmpeg.exe',
-    'linux_64': 'ffmpeg',
-    'linux_32': 'ffmpeg'}
 
 
 def current_platform() -> str:
@@ -75,10 +57,6 @@ def get_lib_url() -> str:
     :return:
     """
     return lib_urls[current_platform()]
-
-
-def get_ffmpeg_url() -> str:
-    return ffmpeg_urls[current_platform()]
 
 
 def download(url: str) -> BytesIO:
@@ -137,7 +115,3 @@ def download_lib():
     """
     if not check_lib_exists():
         download(get_lib_url())
-
-
-if __name__ == '__main__':
-    download_lib()
