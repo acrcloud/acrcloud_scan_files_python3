@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from typing import Optional, Any, List, TypeVar, Type, Callable, cast
 from datetime import datetime
 import dateutil.parser
+from json import JSONEncoder
+
 
 T = TypeVar("T")
 

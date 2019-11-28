@@ -27,8 +27,17 @@ class ACRCloudScan:
         self.scan_type = ScanType.SCAN_TYPE_BOTH
         self.with_duration = False
         self.filter_results = False
+        self.split_results = False
 
     def _get_file_duration_ms(self, filename: str) -> int:
+        """
+        get the file's total play duration
+        :param filename: the file position
+        :return: the duration of the file (int)
+        """
+        return self._recognizer.get_duration_ms_by_file(filename)
+
+    def get_file_duration_ms(self, filename: str) -> int:
         """
         get the file's total play duration
         :param filename: the file position
@@ -491,22 +500,57 @@ class ACRCloudScan:
         if not any(results):
             return
 
+        suffix = '.csv'
+
         keys = list(results[0].to_dict().keys())
         # using utf-8-sig: Avoid using excel display wrong characters. F Microsoft.
-        suffix = '.csv'
-        report_filename = f'{report_filename}{suffix}'
-        with open(report_filename, 'w', encoding="utf-8-sig") as f:
+        report_full_filename = f'{report_filename}{suffix}'
+
+        with open(report_full_filename, 'w', encoding="utf-8-sig") as f:
             dict_writer = csv.DictWriter(f, keys)
             dict_writer.writeheader()
             for r in results:
                 res = r.to_dict()
-                # res['played_duration_s'] = get_human_readable_time(res['played_duration_ms'] / 1000)
                 res['similar_results'] = '|##|'.join(self._parse_similar_results(res['similar_results']))
                 res['start_time_ms'] = get_human_readable_time(res['start_time_ms'] / 1000)
                 res['end_time_ms'] = get_human_readable_time(res['end_time_ms'] / 1000)
                 dict_writer.writerow(res)
 
-        logging.info(f'The results are exported in {report_filename}')
+        logging.info(f'The results are exported in {report_full_filename}')
+
+    def export_to_different_csv(self, results: list, report_filename: str) -> None:
+        """
+        Export the results to a different file
+
+        :param results:
+        :param report_filename
+        :return:
+        """
+        suffix = '.csv'
+        keys = list(results[0].to_dict().keys())
+        report_filenames = []
+        tmp = ''
+        for r in results:
+            if tmp != r.filename:
+                tmp = r.filename
+                report_full_filename = f'{report_filename}_{r.filename}{suffix}'
+                report_filenames.append(report_full_filename)
+                with open(report_full_filename, 'w', encoding="utf-8-sig") as f:
+                    dict_writer = csv.DictWriter(f, keys)
+                    dict_writer.writeheader()
+
+        for r in results:
+            report_full_filename = f'{report_filename}_{r.filename}{suffix}'
+            with open(report_full_filename, 'a', encoding="utf-8-sig") as f:
+                dict_writer = csv.DictWriter(f, keys)
+                res = r.to_dict()
+                res['similar_results'] = '|##|'.join(self._parse_similar_results(res['similar_results']))
+                res['start_time_ms'] = get_human_readable_time(res['start_time_ms'] / 1000)
+                res['end_time_ms'] = get_human_readable_time(res['end_time_ms'] / 1000)
+                dict_writer.writerow(res)
+
+        for i in report_filenames:
+            logging.info(f'The results are exported in {i}')
 
     @staticmethod
     def export_to_json(results: list, report_filename: str):
@@ -520,16 +564,24 @@ class ACRCloudScan:
             return
 
         suffix = '.json'
-        report_filename = f'{report_filename}{suffix}'
-        with open(report_filename, 'w', encoding="utf-8") as f:
-            f.write(json.dumps(results))
-        logging.info(f'The results are exported in {report_filename}')
+        report_full_filename = f'{report_filename}{suffix}'
+        result_dict = []
+        for res in results:
+            result_dict.append(res.to_dict())
+
+        with open(report_full_filename, 'w', encoding="utf-8") as f:
+            f.write(json.dumps(result_dict))
+
+        logging.info(f'The results are exported in {report_full_filename}')
 
     def export(self, results: list, report_filename: str, output_format):
         if output_format == 'json':
             self.export_to_json(results, report_filename)
         else:
-            self.export_to_csv(results, report_filename)
+            if self.split_results:
+                self.export_to_different_csv(results, report_filename)
+            else:
+                self.export_to_csv(results, report_filename)
 
     def scan_target(self, target: str, output: str, output_format: str) -> None:
         """

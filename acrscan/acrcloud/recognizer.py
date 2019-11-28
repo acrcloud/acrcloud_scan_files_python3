@@ -78,7 +78,7 @@ class ACRCloudRecognizer:
 
         # self.debug = config.get('debug', False)
         # if self.debug:
-        #     acrcloud_extr_tool.set_debug()
+        # acrcloud_extr_tool.set_debug()
 
     def post_multipart(self, url, fields, files, timeout):
         content_type, body = self.encode_multipart_formdata(fields, files)
@@ -165,6 +165,7 @@ class ACRCloudRecognizer:
             fields['sample_hum_bytes'] = str(sample_hum_bytes)
 
         server_url = 'http://' + host + http_url_file
+
         res = self.post_multipart(server_url, fields, query_data, timeout)
         return res
 

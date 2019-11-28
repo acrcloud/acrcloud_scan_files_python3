@@ -48,7 +48,9 @@ class OptionRequiredIf(click.Option):
               help='Add played duration to the result')
 @click.option('--filter-results/--no-filter', default=False,
               help='Enable filter.(It must be used when the with-duration option is on)', cls=OptionRequiredIf)
-def main(target, output, output_format, with_duration, filter_results):
+@click.option('--split-results/--no-split', '-s', default=False,
+              help='Each audio/video file generate a report')
+def main(target, output, output_format, with_duration, filter_results, split_results):
     ctx = click.get_current_context()
     if not any(v for v in ctx.params.values()):
         click.echo(ctx.get_help())
@@ -57,6 +59,7 @@ def main(target, output, output_format, with_duration, filter_results):
     acr = ACRCloudScan(acrcloud_config)
     acr.with_duration = with_duration
     acr.filter_results = filter_results
+    acr.split_results = split_results
     if output:
         if not os.path.exists(output):
             open(output, 'w+')

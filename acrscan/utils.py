@@ -66,8 +66,6 @@ def get_human_readable_time(seconds: int) -> str:
     return time.strftime("%H:%M:%S", time.gmtime(seconds))
 
 
-
-
 def trim_invalid_file_path_chars(path: str) -> str:
     regex = re.compile(r'[\\/:*?"<>|]')
     return regex.sub(' ', path)
