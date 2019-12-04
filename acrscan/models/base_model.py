@@ -423,6 +423,7 @@ class BaseResult:
     status_code: Optional[int] = None
     start_time_ms: Optional[int] = None
     end_time_ms: Optional[int] = None
+    duration_ms: Optional[int] = None
     played_duration_ms: Optional[int] = None
     title: Optional[str] = None
     score: Optional[int] = None
@@ -450,6 +451,7 @@ class MusicResult(BaseResult):
                         "status_code": from_union([from_int, from_none], self.status_code),
                         "start_time_ms": from_union([from_str, from_int, from_none], self.start_time_ms),
                         "end_time_ms": from_union([from_str, from_int, from_none], self.end_time_ms),
+                        "duration_ms": from_union([from_int, from_none], self.duration_ms),
                         "played_duration_ms": from_union([from_int, from_none], self.played_duration_ms),
                         "title": from_union([from_str, from_none], self.title),
                         "score": from_union([from_int, from_none], self.score),
@@ -489,6 +491,7 @@ class CustomFileResult(BaseResult):
                         "status_code": from_union([from_int, from_none], self.status_code),
                         "start_time_ms": from_union([from_str, from_int, from_none], self.start_time_ms),
                         "end_time_ms": from_union([from_str, from_int, from_none], self.end_time_ms),
+                        "duration_ms": from_union([from_int, from_none], self.duration_ms),
                         "played_duration_ms": from_union([from_int, from_none], self.played_duration_ms),
                         "title": from_union([from_str, from_none], self.title),
                         "score": from_union([from_int, from_none], self.score),
