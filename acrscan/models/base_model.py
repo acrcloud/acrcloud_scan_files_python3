@@ -150,6 +150,20 @@ class GenreClass:
 
 
 @dataclass
+class GenresNullClass:
+    pass
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'GenresNullClass':
+        assert isinstance(obj, dict)
+        return GenresNullClass()
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        return result
+
+
+@dataclass
 class ExternalIDS:
     isrc: Optional[str] = None
     upc: Optional[str] = None
@@ -198,7 +212,8 @@ class Deezer:
         assert isinstance(obj, dict)
         album = from_union([DeezerAlbum.from_dict, from_none], obj.get("album"))
         artists = from_union([lambda x: from_list(DeezerAlbum.from_dict, x), from_none], obj.get("artists"))
-        genres = from_union([lambda x: from_list(DeezerAlbum.from_dict, x), from_none], obj.get("genres"))
+        genres = from_union([lambda x: from_list(DeezerAlbum.from_dict, x), GenresNullClass.from_dict, from_none],
+                            obj.get("genres"))
         track = from_union([DeezerAlbum.from_dict, from_none], obj.get("track"))
         return Deezer(album, artists, genres, track)
 
