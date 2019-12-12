@@ -615,6 +615,10 @@ class ACRCloudScan:
                 output = output + os.sep
             if not os.path.exists(output):
                 os.makedirs(output)
+
+            if not os.path.basename(target):
+                prefix = output + 'acrcloud'
+            else:
                 prefix = output + os.path.basename(target)
 
         output_filenames = {
