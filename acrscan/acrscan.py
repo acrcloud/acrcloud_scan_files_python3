@@ -559,7 +559,6 @@ class ACRCloudScan:
         """
         if not any(results):
             return
-
         suffix = '.json'
         report_full_filename = f'{report_filename}{suffix}'
         result_dict = []
@@ -611,9 +610,12 @@ class ACRCloudScan:
 
         prefix = target
 
-        if output and not os.path.isdir(output):
-            os.makedirs(output)
-            prefix = output
+        if output:
+            if not output.endswith(os.sep):
+                output = output + os.sep
+            if not os.path.exists(output):
+                os.makedirs(output)
+                prefix = output + os.path.basename(target)
 
         output_filenames = {
             'music': f'{prefix}_music',

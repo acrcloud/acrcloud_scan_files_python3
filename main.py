@@ -60,9 +60,6 @@ def main(target, output, output_format, with_duration, filter_results, split_res
     acr.with_duration = with_duration
     acr.filter_results = filter_results
     acr.split_results = split_results
-    if output:
-        if not os.path.exists(output):
-            open(output, 'w+')
     acr.scan_target(target, output, output_format)
 
 
