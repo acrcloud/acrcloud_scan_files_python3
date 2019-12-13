@@ -63,7 +63,7 @@ If you want your results to include played duration. Please email us (support@ac
   sudo docker run --rm acrcloud/acrscan
   
   # Basic usage
-  sudo docker run --rm -v $(pwd):/tmp -v /Users/acrcloud/:/music/ acrcloud/acrscan -f /test/test.mp4 -o /tmp
+  sudo docker run --rm -v $(pwd):/tmp -v /Users/acrcloud/:/music/ acrcloud/acrscan -t /test/test.mp4 -o /tmp
   
   You need to change /Users/acrcloud/ to the directory where your audio/video file is.
   And the report file will in the acrcloud_scan_files_python3 directory.
