@@ -70,3 +70,23 @@ def get_human_readable_time(seconds: int) -> str:
 def trim_invalid_file_path_chars(path: str) -> str:
     regex = re.compile(r'[\\/:*?"<>|]')
     return regex.sub(' ', path)
+
+
+def create_folders(path: str) -> str:
+    if not path.endswith(os.sep):
+        path = path + os.sep
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
+def is_path_file(path: str) -> bool:
+    if os.path.splitext(path)[1]:
+        return True
+    return False
+
+
+def is_path_folder(path: str) -> bool:
+    if not os.path.splitext(path)[1]:
+        return True
+    return False

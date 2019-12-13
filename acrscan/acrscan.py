@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import csv
-from .utils import is_title_similar_or_equal, get_human_readable_time
+from .utils import *
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -579,12 +579,10 @@ class ACRCloudScan:
             else:
                 self.export_to_csv(results, report_filename)
 
-    def scan_target(self, target: str, output: str, output_format: str) -> None:
+    def scan_target(self, target: str):
         """
         scan a target (a file or a folder)
         :param target: target path
-        :param output: output path (must be a folder name)
-        :param output_format: the format of the output report json or csv
         :return:
         """
 
@@ -596,65 +594,81 @@ class ACRCloudScan:
         total_custom_file_results = []
 
         if os.path.isfile(target):
+            # scan a single file
             music_results, custom_file_results = self._scan(target)
             total_music_results = music_results
             total_custom_file_results = custom_file_results
         elif os.path.isdir(target):
+            # scan folder
             filenames = [f'{target}/{i}' for i in os.listdir(target)]
             for file in filenames:
                 music_results, custom_file_results = self._scan(file)
                 total_music_results += music_results
                 total_custom_file_results += custom_file_results
-        else:
-            logging.error(f'Unsupported target {target}')
+        return total_music_results, total_custom_file_results
 
-        prefix = target
+    def scan_main(self, target: str, output: str, output_format: str) -> None:
+        """
+        scan a target (a file or a folder)
+        :param target: target path
+        :param output: output path (must be a folder name)
+        :param output_format: the format of the output report json or csv
+        """
+        logger.info(f'Scan type: {self.scan_type}')
+        total_music_results, total_custom_file_results = self.scan_target(target)
 
-        if output:
-            if not output.endswith(os.sep):
-                output = output + os.sep
-            if not os.path.exists(output):
-                os.makedirs(output)
-
-            if not os.path.basename(target):
-                prefix = output + 'acrcloud'
-            else:
-                prefix = output + os.path.basename(target)
-
-        output_filenames = {
-            'music': f'{prefix}_music',
-            'custom': f'{prefix}_custom_file',
-            'merged_music': f'{prefix}_with_duration_music',
-            'merged_custom_file': f'{prefix}_with_duration_custom_file',
-            'filtered_music': f'{prefix}_filtered_music',
-            'filtered_custom_file': f'{prefix}_filtered_custom_file',
+        output_music_filenames = {
+            'music': f'{target}_music',
+            'merged_music': f'{target}_with_duration_music',
+            'filtered_music': f'{target}_filtered_music',
+        }
+        output_custom_filenames = {
+            'custom': f'{target}_custom_file',
+            'merged_custom_file': f'{target}_with_duration_custom_file',
+            'filtered_custom_file': f'{target}_filtered_custom_file',
         }
 
-        final_music_results = total_music_results
-        final_custom_file_results = total_custom_file_results
-
-        music_output_filename = output_filenames['music']
-        custom_file_output_filename = output_filenames['custom']
+        music_output_filename = output_music_filenames['music']
+        custom_file_output_filename = output_custom_filenames['custom']
 
         if self.with_duration:
-            merged_music_results = self._merge_results_with_simple_filter(total_music_results)
-            merged_custom_file_results = self._merge_results_with_simple_filter(total_custom_file_results)
-
-            final_music_results = merged_music_results
-            final_custom_file_results = merged_custom_file_results
-
-            music_output_filename = output_filenames['merged_music']
-            custom_file_output_filename = output_filenames['merged_custom_file']
-
+            total_music_results = self._merge_results_with_simple_filter(total_music_results)
+            total_custom_file_results = self._merge_results_with_simple_filter(total_custom_file_results)
             if self.filter_results:
-                filtered_music_results = self._filter_results(merged_music_results)
-                filtered_custom_file_results = self._filter_results(merged_custom_file_results)
+                total_music_results = self._filter_results(total_music_results)
+                total_custom_file_results = self._filter_results(total_custom_file_results)
 
-                final_music_results = filtered_music_results
-                final_custom_file_results = filtered_custom_file_results
+        if output:
+            if self.split_results:
+                if not is_path_folder(output):
+                    output = os.path.splitext(output)[0]
+                    # 如果是分开导出的，把output当做文件夹创建
+                export_path = create_folders(output)
+            else:
+                export_path, _ = os.path.splitext(output)
 
-                music_output_filename = output_filenames['filtered_music']
-                custom_file_output_filename = output_filenames['filtered_custom_file']
+            music_output_filename = export_path
+            custom_file_output_filename = export_path
 
-        self.export(final_music_results, music_output_filename, output_format)
-        self.export(final_custom_file_results, custom_file_output_filename, output_format)
+            if self.scan_type == ScanType.SCAN_TYPE_BOTH:
+                music_output_filename += '_music'
+                custom_file_output_filename += '_custom_file'
+
+        else:
+            if self.with_duration:
+                music_output_filename = output_music_filenames['merged_custom_file']
+                custom_file_output_filename = output_custom_filenames['filtered_custom_file']
+            if self.filter_results:
+                music_output_filename = output_music_filenames['merged_custom_file']
+                custom_file_output_filename = output_custom_filenames['filtered_custom_file']
+
+        if self.scan_type == ScanType.SCAN_TYPE_MUSIC:
+            self.export(total_music_results, music_output_filename, output_format)
+            return
+        if self.scan_type == ScanType.SCAN_TYPE_CUSTOM:
+            self.export(total_custom_file_results, custom_file_output_filename, output_format)
+            return
+        if self.scan_type == ScanType.SCAN_TYPE_BOTH:
+            self.export(total_music_results, music_output_filename, output_format)
+            self.export(total_custom_file_results, custom_file_output_filename, output_format)
+            return

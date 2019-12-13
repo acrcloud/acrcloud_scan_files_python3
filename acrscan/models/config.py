@@ -3,7 +3,7 @@
 
 
 class ScanType:
-    SCAN_TYPE_MUSIC = 1,
-    SCAN_TYPE_CUSTOM = 2,
-    SCAN_TYPE_BOTH = 3,
+    SCAN_TYPE_MUSIC = 'music'
+    SCAN_TYPE_CUSTOM = 'custom'
+    SCAN_TYPE_BOTH = 'both'
 

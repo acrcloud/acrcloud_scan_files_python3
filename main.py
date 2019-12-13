@@ -39,7 +39,7 @@ class OptionRequiredIf(click.Option):
 
 @click.command()
 @click.option('--target', '-t',
-              help='The target need to scan (a folder or a file).')
+              help='The target need to scan (a folder or a file).', required=True)
 @click.option('--output', '-o', default='',
               help='Output result to this folder. (Must be a folder path)')
 @click.option('--format', 'output_format', type=click.Choice(['csv', 'json']),
@@ -50,7 +50,9 @@ class OptionRequiredIf(click.Option):
               help='Enable filter.(It must be used when the with-duration option is on)', cls=OptionRequiredIf)
 @click.option('--split-results/--no-split', '-s', default=False,
               help='Each audio/video file generate a report')
-def main(target, output, output_format, with_duration, filter_results, split_results):
+@click.option('--scan-type', '-c', type=click.Choice(['music', 'custom', 'both']), default='both',
+              help='scan type')
+def main(target, output, output_format, with_duration, filter_results, split_results, scan_type):
     ctx = click.get_current_context()
     if not any(v for v in ctx.params.values()):
         click.echo(ctx.get_help())
@@ -60,7 +62,8 @@ def main(target, output, output_format, with_duration, filter_results, split_res
     acr.with_duration = with_duration
     acr.filter_results = filter_results
     acr.split_results = split_results
-    acr.scan_target(target, output, output_format)
+    acr.scan_type = scan_type
+    acr.scan_main(target, output, output_format)
 
 
 if __name__ == '__main__':
