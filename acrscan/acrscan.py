@@ -28,6 +28,7 @@ class ACRCloudScan:
         self.with_duration = False
         self.filter_results = False
         self.split_results = False
+        self.start_time_ms = 0 * 1000
 
     def _get_file_duration_ms(self, filename: str) -> int:
         """
@@ -73,10 +74,9 @@ class ACRCloudScan:
         duration_ms = self._get_file_duration_ms(filename)
         if not duration_ms:
             duration_ms = 0
-
         logger.info(f'{filename} File total duration {duration_ms / 1000} seconds')
 
-        for t_ms in range(0, duration_ms, self._recognize_length_ms):
+        for t_ms in range(self.start_time_ms, duration_ms, self._recognize_length_ms):
             rec_result = self._recognize(filename, t_ms)
             response = Response.from_dict(rec_result)
 

@@ -52,7 +52,9 @@ class OptionRequiredIf(click.Option):
               help='Each audio/video file generate a report')
 @click.option('--scan-type', '-c', type=click.Choice(['music', 'custom', 'both']), default='both',
               help='scan type')
-def main(target, output, output_format, with_duration, filter_results, split_results, scan_type):
+@click.option('--start-time-ms', '-s', default=0,
+              help='scan start time')
+def main(target, output, output_format, with_duration, filter_results, split_results, scan_type, start_time_ms):
     ctx = click.get_current_context()
     if not any(v for v in ctx.params.values()):
         click.echo(ctx.get_help())
@@ -63,6 +65,7 @@ def main(target, output, output_format, with_duration, filter_results, split_res
     acr.filter_results = filter_results
     acr.split_results = split_results
     acr.scan_type = scan_type
+    acr.start_time_ms = start_time_ms * 1000
     acr.scan_main(target, output, output_format)
 
 
