@@ -80,13 +80,15 @@ def create_folders(path: str) -> str:
     return path
 
 
-def is_path_file(path: str) -> bool:
-    if os.path.splitext(path)[1]:
+def is_file(path: str) -> bool:
+    full_path, extension = os.path.splitext(path)
+    if full_path and extension:
         return True
     return False
 
 
-def is_path_folder(path: str) -> bool:
-    if not os.path.splitext(path)[1]:
+def is_folder(path: str) -> bool:
+    full_path, extension = os.path.splitext(path)
+    if full_path and not extension:
         return True
     return False
