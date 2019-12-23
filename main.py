@@ -10,7 +10,6 @@ except ImportError:
     from acrscan.acrscan import ACRCloudScan
 import logging
 import yaml
-import os
 import click
 
 with open('config.yaml', 'r') as f:
@@ -20,11 +19,11 @@ with open('config.yaml', 'r') as f:
         logging.error(exc)
 
 acrcloud_config = config_dict.get('acrcloud')
-acrcloud_config.get('')
-logging.basicConfig(level=logging.INFO)
 
 if acrcloud_config.get('debug'):
     logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
 
 
 class OptionRequiredIf(click.Option):

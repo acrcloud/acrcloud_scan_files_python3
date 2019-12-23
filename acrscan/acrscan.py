@@ -12,7 +12,6 @@ import csv
 from .utils import *
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 class ACRCloudScan:
@@ -58,7 +57,6 @@ class ACRCloudScan:
         start_time_s = int(start_time_ms / 1000)
 
         result = self._recognizer.recognize_by_file(filename, start_time_s, recognize_length_s)
-
         logger.debug(result)
 
         return json.loads(result)
@@ -78,6 +76,7 @@ class ACRCloudScan:
 
         for t_ms in range(self.start_time_ms, duration_ms, self._recognize_length_ms):
             rec_result = self._recognize(filename, t_ms)
+
             response = Response.from_dict(rec_result)
 
             music_result, custom_file_result = self._parse_response_to_result(filename, t_ms, response)

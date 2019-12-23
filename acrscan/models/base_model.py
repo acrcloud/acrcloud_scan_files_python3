@@ -4,7 +4,7 @@
 # Do not change this file
 
 from dataclasses import dataclass
-from typing import Optional, Any, List, TypeVar, Type, Callable, cast
+from typing import Optional, Any, List, TypeVar, Type, Callable, cast, Union
 from datetime import datetime
 import dateutil.parser
 
@@ -137,6 +137,7 @@ class Metadata:
 @dataclass
 class GenreClass:
     name: Optional[str] = None
+    id: Optional[int] = None
 
     @staticmethod
     def from_dict(obj: Any) -> 'GenreClass':
@@ -145,7 +146,8 @@ class GenreClass:
         return GenreClass(name)
 
     def to_dict(self) -> dict:
-        result: dict = {"name": from_union([from_str, from_none], self.name)}
+        result: dict = {"name": from_union([from_str, from_none], self.name),
+                        }
         return result
 
 
@@ -202,28 +204,29 @@ class DeezerAlbum:
 
 @dataclass
 class Deezer:
+    genres: Union[List[DeezerAlbum], GenresNullClass, None]
+
     album: Optional[DeezerAlbum] = None
     artists: Optional[List[DeezerAlbum]] = None
-    genres: Optional[List[DeezerAlbum]] = None
     track: Optional[DeezerAlbum] = None
 
     @staticmethod
     def from_dict(obj: Any) -> 'Deezer':
         assert isinstance(obj, dict)
-        album = from_union([DeezerAlbum.from_dict, from_none], obj.get("album"))
-        artists = from_union([lambda x: from_list(DeezerAlbum.from_dict, x), from_none], obj.get("artists"))
         genres = from_union([lambda x: from_list(DeezerAlbum.from_dict, x), GenresNullClass.from_dict, from_none],
                             obj.get("genres"))
         track = from_union([DeezerAlbum.from_dict, from_none], obj.get("track"))
-        return Deezer(album, artists, genres, track)
+        artists = from_union([lambda x: from_list(DeezerAlbum.from_dict, x), from_none], obj.get("artists"))
+        album = from_union([DeezerAlbum.from_dict, from_none], obj.get("album"))
+        return Deezer(genres, track, artists, album)
 
     def to_dict(self) -> dict:
-        result: dict = {"album": from_union([lambda x: to_class(DeezerAlbum, x), from_none], self.album),
-                        "artists": from_union([lambda x: from_list(lambda x: to_class(DeezerAlbum, x), x), from_none],
-                                              self.artists),
-                        "genres": from_union([lambda x: from_list(lambda x: to_class(DeezerAlbum, x), x), from_none],
-                                             self.genres),
-                        "track": from_union([lambda x: to_class(DeezerAlbum, x), from_none], self.track)}
+        result: dict = {"genres": from_union(
+            [lambda x: from_list(lambda x: to_class(DeezerAlbum, x), x), lambda x: to_class(GenresNullClass, x),
+             from_none], self.genres), "track": from_union([lambda x: to_class(DeezerAlbum, x), from_none], self.track),
+            "artists": from_union([lambda x: from_list(lambda x: to_class(DeezerAlbum, x), x), from_none],
+                                  self.artists),
+            "album": from_union([lambda x: to_class(DeezerAlbum, x), from_none], self.album)}
         return result
 
 
