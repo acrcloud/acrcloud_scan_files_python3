@@ -10,6 +10,7 @@ import logging
 import os
 import csv
 from .utils import *
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,10 @@ class ACRCloudScan:
             rec_result = self._recognize(filename, t_ms)
 
             response = Response.from_dict(rec_result)
+            response_code = response.status.code
+            if response_code != 1001 or response_code != 0:
+                logger.error(response.status.msg)
+                sys.exit()
 
             music_result, custom_file_result = self._parse_response_to_result(filename, t_ms, response)
 
