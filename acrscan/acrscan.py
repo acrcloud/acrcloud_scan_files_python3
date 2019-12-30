@@ -80,7 +80,7 @@ class ACRCloudScan:
 
             response = Response.from_dict(rec_result)
             response_code = response.status.code
-            if response_code != 1001 or response_code != 0:
+            if response_code != 1001 and response_code != 0:
                 logger.error(response.status.msg)
                 sys.exit()
 
