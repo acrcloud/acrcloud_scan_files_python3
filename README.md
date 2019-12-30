@@ -17,6 +17,15 @@ Supported Format:
 -   [x] filter report result
 -   [ ] custom report fields
 
+## Notice
+
+If you are using Windows. Please make sure you've installed Microsoft Visual C++ runtime
+
+X86: [download and install Library(windows/vcredist_x86.exe)](https://www.microsoft.com/en-us/download/details.aspx?id=5555)
+ 
+X64: [download and install Library(windows/vcredist_x64.exe)](https://www.microsoft.com/en-us/download/details.aspx?id=14632)
+ 
+
 ## Getting Started
 1. Install Python 3.7+
 ```
