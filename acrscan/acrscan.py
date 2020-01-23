@@ -80,9 +80,9 @@ class ACRCloudScan:
 
             response = Response.from_dict(rec_result)
             response_code = response.status.code
-            if response_code != 1001 and response_code != 0:
-                logger.error(response.status.msg)
-                sys.exit()
+            if response_code != 1001 and response_code != 0 and response_code != 2006:
+                logger.error(f'Code:{response_code} Message: {response.status.msg}')
+                #sys.exit()
 
             music_result, custom_file_result = self._parse_response_to_result(filename, t_ms, response)
 
