@@ -52,8 +52,19 @@ $ python main.py -t ~/test/test.mp4
 ```
 
 ## Results with played duration
-If you want your results to include played duration. Please email us (support@acrcloud.com) to get the usage and the permission
 
+**If you want your results to include played duration. Please email us (support@acrcloud.com) to get the usage and the permission**
+
+- with played duration:
+
+```bash
+$ python main.py -t ~/test/test.mp4 -w
+```
+- with played duration and filter results
+
+```bash
+$ python main.py -t ~/test/test.mp4 -w --filter-results
+```
 
 ## Using Docker
 - Install Docker 
