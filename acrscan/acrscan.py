@@ -82,7 +82,7 @@ class ACRCloudScan:
             response_code = response.status.code
             if response_code != 1001 and response_code != 0 and response_code != 2006:
                 logger.error(f'Code:{response_code} Message: {response.status.msg}')
-                #sys.exit()
+                # sys.exit()
 
             music_result, custom_file_result = self._parse_response_to_result(filename, t_ms, response)
 
@@ -150,6 +150,33 @@ class ACRCloudScan:
                     music_result.release_date = primary_music_result.release_date
                 if primary_music_result.label:
                     music_result.label = primary_music_result.label
+
+                if primary_music_result.language:
+                    music_result.language = primary_music_result.language
+
+                if primary_music_result.contributors:
+                    if primary_music_result.contributors.composers:
+                        composers_names_list = []
+                        for c in primary_music_result.contributors.composers:
+                            composers_names_list.append(c)
+
+                        composers_names = "|##|".join(composers_names_list)
+                        music_result.composers = composers_names
+
+                    if primary_music_result.contributors.lyricists:
+                        lyricists_names_list = []
+                        for k in primary_music_result.contributors.lyricists:
+                            lyricists_names_list.append(k)
+                        lyricists_names = "|##|".join(lyricists_names_list)
+                        music_result.lyricists = lyricists_names
+
+                if primary_music_result.lyrics:
+                    lyrics_copyrights_list = []
+                    for ly in primary_music_result.lyrics.copyrights:
+                        lyrics_copyrights_list.append(ly)
+                    lyrics_copyrights = "|##|".join(lyrics_copyrights_list)
+                    music_result.lyrics = lyrics_copyrights
+
                 if primary_music_result.artists:
                     artists_names_list = []
                     for a in primary_music_result.artists:
@@ -163,10 +190,13 @@ class ACRCloudScan:
                 music_result.primary_result = primary_music_result
 
                 if self.with_duration:
-                    music_result.played_duration_ms = \
-                        music_result.sample_end_time_offset_ms - music_result.sample_begin_time_offset_ms
-                    music_result.db_begin_time_offset_ms = primary_music_result.db_begin_time_offset_ms
-                    music_result.db_end_time_offset_ms = primary_music_result.db_end_time_offset_ms
+                    if not music_result.sample_begin_time_offset_ms:
+                        logger.error('Please contact us (support@acrcloud.com) to get the \'played duration\' feature')
+                    else:
+                        music_result.played_duration_ms = \
+                            music_result.sample_end_time_offset_ms - music_result.sample_begin_time_offset_ms
+                        music_result.db_begin_time_offset_ms = primary_music_result.db_begin_time_offset_ms
+                        music_result.db_end_time_offset_ms = primary_music_result.db_end_time_offset_ms
 
             # custom file
 

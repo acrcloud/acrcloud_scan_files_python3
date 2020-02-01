@@ -309,6 +309,39 @@ class ExternalMetadata:
 
 
 @dataclass
+class Contributors:
+    composers: Optional[List[str]] = None
+    lyricists: Optional[List[str]] = None
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'Contributors':
+        assert isinstance(obj, dict)
+        composers = from_union([lambda x: from_list(from_str, x), from_none], obj.get("composers"))
+        lyricists = from_union([lambda x: from_list(from_str, x), from_none], obj.get("lyricists"))
+        return Contributors(composers, lyricists)
+
+    def to_dict(self) -> dict:
+        result: dict = {"composers": from_union([lambda x: from_list(from_str, x), from_none], self.composers),
+                        "lyricists": from_union([lambda x: from_list(from_str, x), from_none], self.lyricists)}
+        return result
+
+
+@dataclass
+class Lyrics:
+    copyrights: Optional[List[str]] = None
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'Lyrics':
+        assert isinstance(obj, dict)
+        copyrights = from_union([lambda x: from_list(from_str, x), from_none], obj.get("copyrights"))
+        return Lyrics(copyrights)
+
+    def to_dict(self) -> dict:
+        result: dict = {"copyrights": from_union([lambda x: from_list(from_str, x), from_none], self.copyrights)}
+        return result
+
+
+@dataclass
 class Music:
     external_ids: Optional[ExternalIDS] = None
     sample_begin_time_offset_ms: Optional[int] = None
@@ -327,6 +360,9 @@ class Music:
     db_end_time_offset_ms: Optional[int] = None
     result_from: Optional[int] = None
     artists: Optional[List[GenreClass]] = None
+    contributors: Optional[Contributors] = None
+    lyrics: Optional[Lyrics] = None
+    language: Optional[str] = None
 
     @staticmethod
     def from_dict(obj: Any) -> 'Music':
@@ -349,9 +385,13 @@ class Music:
         result_from = from_union([from_int, from_none], obj.get("result_from"))
         artists = from_union([lambda x: from_list(GenreClass.from_dict, x), from_none], obj.get("artists"))
 
+        contributors = from_union([Contributors.from_dict, from_none], obj.get("contributors"))
+        lyrics = from_union([Lyrics.from_dict, from_none], obj.get("lyrics"))
+        language = from_union([from_str, from_none], obj.get("language"))
+
         return Music(external_ids, sample_begin_time_offset_ms, sample_end_time_offset_ms, label, duration_ms, acrid,
                      db_begin_time_offset_ms, play_offset_ms, release_date, genres, score, title, external_metadata,
-                     album, db_end_time_offset_ms, result_from, artists)
+                     album, db_end_time_offset_ms, result_from, artists, contributors, lyrics, language)
 
     def to_dict(self) -> dict:
         result: dict = {"external_ids": from_union([lambda x: to_class(ExternalIDS, x), from_none], self.external_ids),
@@ -373,7 +413,11 @@ class Music:
                         "db_end_time_offset_ms": from_union([from_int, from_none], self.db_end_time_offset_ms),
                         "result_from": from_union([from_int, from_none], self.result_from),
                         "artists": from_union([lambda x: from_list(lambda x: to_class(GenreClass, x), x), from_none],
-                                              self.artists)}
+                                              self.artists),
+                        "contributors": from_union([lambda x: to_class(Contributors, x), from_none], self.contributors),
+                        "lyrics": from_union([lambda x: to_class(Lyrics, x), from_none], self.lyrics),
+                        "language": from_union([from_str, from_none], self.language)
+                        }
         return result
 
 
@@ -453,7 +497,6 @@ class BaseResult:
 
 
 class MusicResult(BaseResult):
-    similar_results: Optional[List[Music]] = None
     artists_names: Optional[str] = None
     isrc: Optional[str] = None
     upc: Optional[str] = None
@@ -462,7 +505,13 @@ class MusicResult(BaseResult):
     deezer_id: Optional[str] = None
     release_date: Optional[str] = None
     label: Optional[str] = None
+    composers: Optional[str] = None
+    lyricists: Optional[str] = None
+    lyrics: Optional[str] = None
+    language: Optional[str] = None
     primary_result: Optional[Music] = None
+    similar_results: Optional[List[Music]] = None
+
 
     def to_dict(self) -> dict:
         result: dict = {"filename": from_union([from_str, from_none], self.filename),
@@ -484,6 +533,11 @@ class MusicResult(BaseResult):
                         "release_date": from_union([from_str, from_none], self.release_date),
                         "label": from_union([from_str, from_none], self.label),
                         "acrid": from_union([from_str, from_none], self.acrid),
+
+                        "composers": from_union([from_str, from_none], self.composers),
+                        "lyricists": from_union([from_str, from_none], self.composers),
+                        "lyrics": from_union([from_str, from_none], self.lyrics),
+                        "language": from_union([from_str, from_none], self.language),
 
                         "sample_begin_time_offset_ms": from_union([from_int, from_none],
                                                                   self.sample_begin_time_offset_ms),
