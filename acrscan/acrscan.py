@@ -190,7 +190,7 @@ class ACRCloudScan:
                 music_result.primary_result = primary_music_result
 
                 if self.with_duration:
-                    if not music_result.sample_begin_time_offset_ms:
+                    if music_result.sample_begin_time_offset_ms is None:
                         logger.error('Please contact us (support@acrcloud.com) to get the \'played duration\' feature')
                     else:
                         music_result.played_duration_ms = \
