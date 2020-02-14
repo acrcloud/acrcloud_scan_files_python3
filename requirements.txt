@@ -1,3 +1,6 @@
+wx
+gooey
+retrying
 click
 python-dateutil
 tqdm

@@ -11,6 +11,7 @@ import os
 import csv
 from .utils import *
 import sys
+from retrying import retry
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ class ACRCloudScan:
         """
         return self._recognizer.get_duration_ms_by_file(filename)
 
+    @retry(stop_max_attempt_number=5, wait_exponential_multiplier=1000, wait_exponential_max=2000)
     def _recognize(self, filename: str, start_time_ms: int) -> dict:
         """
         do recognize and deserialization the json
@@ -59,8 +61,10 @@ class ACRCloudScan:
 
         result = self._recognizer.recognize_by_file(filename, start_time_s, recognize_length_s)
         logger.debug(result)
-
-        return json.loads(result)
+        result = json.loads(result)
+        if result.get('code') == 3000:
+            raise Exception('Http Error"')
+        return result
 
     def _scan(self, filename: str) -> (list, list):
         """
@@ -77,7 +81,7 @@ class ACRCloudScan:
 
         for t_ms in range(self.start_time_ms, duration_ms, self._recognize_length_ms):
             rec_result = self._recognize(filename, t_ms)
-
+            logger.info("progress: {}/{}".format(t_ms, duration_ms))
             response = Response.from_dict(rec_result)
             response_code = response.status.code
             if response_code != 1001 and response_code != 0 and response_code != 2006:
@@ -547,7 +551,7 @@ class ACRCloudScan:
                 res['end_time_ms'] = get_human_readable_time(res['end_time_ms'] / 1000)
                 dict_writer.writerow(res)
 
-        logging.info(f'The results are exported in {report_full_filename}')
+        logger.info(f'The results are exported in {report_full_filename}')
 
     def export_to_different_csv(self, results: list, report_filename: str) -> None:
         """
@@ -581,7 +585,7 @@ class ACRCloudScan:
                 dict_writer.writerow(res)
 
         for i in report_filenames:
-            logging.info(f'The results are exported in {i}')
+            logger.info(f'The results are exported in {i}')
 
     @staticmethod
     def export_to_json(results: list, report_filename: str):
@@ -602,7 +606,7 @@ class ACRCloudScan:
         with open(report_full_filename, 'w', encoding="utf-8") as f:
             f.write(json.dumps(result_dict))
 
-        logging.info(f'The results are exported in {report_full_filename}')
+        logger.info(f'The results are exported in {report_full_filename}')
 
     def export(self, results: list, report_filename: str, output_format):
         if output_format == 'json':
@@ -621,7 +625,7 @@ class ACRCloudScan:
         """
 
         if not os.path.exists(target):
-            logging.warning(f'Not Exist {target}')
+            logger.warning(f'Not Exist {target}')
             return
 
         total_music_results = []
@@ -695,6 +699,7 @@ class ACRCloudScan:
             target_custom_basename = os.path.basename(custom_file_output_filename)
             music_output_filename = folder_path + target_music_basename
             custom_file_output_filename = folder_path + target_custom_basename
+
 
         if self.scan_type == ScanType.SCAN_TYPE_MUSIC:
             self.export(total_music_results, music_output_filename, output_format)
