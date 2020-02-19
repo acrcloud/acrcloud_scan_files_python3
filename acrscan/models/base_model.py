@@ -423,7 +423,7 @@ class Music:
 
 @dataclass
 class CustomFile:
-    audio_id: Optional[int] = None
+    audio_id: Union[int, None, str]
     bucket_id: Optional[int] = None
     duration_ms: Optional[int] = None
     sample_begin_time_offset_ms: Optional[int] = None
@@ -438,7 +438,7 @@ class CustomFile:
     @staticmethod
     def from_dict(obj: Any) -> 'CustomFile':
         assert isinstance(obj, dict)
-        audio_id = from_union([from_none, lambda x: int(from_str(x))], obj.get("audio_id"))
+        audio_id = from_union([from_int, from_str, from_none], obj.get("audio_id"))
         bucket_id = from_union([from_none, lambda x: int(from_str(x))], obj.get("bucket_id"))
         duration_ms = from_union([from_none, lambda x: int(from_str(x))], obj.get("duration_ms"))
         sample_begin_time_offset_ms = from_union([from_int, from_none], obj.get("sample_begin_time_offset_ms"))
@@ -455,9 +455,7 @@ class CustomFile:
                           play_offset_ms, score)
 
     def to_dict(self) -> dict:
-        result: dict = {"audio_id": from_union([lambda x: from_none((lambda x: is_type(type(None), x))(x)),
-                                                lambda x: from_str((lambda x: str((lambda x: is_type(int, x))(x)))(x))],
-                                               self.audio_id),
+        result: dict = {"audio_id": from_union([from_int, from_str, from_none], self.audio_id),
                         "bucket_id": from_union([lambda x: from_none((lambda x: is_type(type(None), x))(x)),
                                                  lambda x: from_str(
                                                      (lambda x: str((lambda x: is_type(int, x))(x)))(x))],
@@ -511,7 +509,6 @@ class MusicResult(BaseResult):
     language: Optional[str] = None
     primary_result: Optional[Music] = None
     similar_results: Optional[List[Music]] = None
-
 
     def to_dict(self) -> dict:
         result: dict = {"filename": from_union([from_str, from_none], self.filename),
