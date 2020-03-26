@@ -75,9 +75,18 @@ class ACRCloudScan:
         music_results = []
         custom_file_results = []
         duration_ms = self._get_file_duration_ms(filename)
+
         if not duration_ms:
             duration_ms = 0
-        logger.info(f'{filename} File total duration {duration_ms / 1000} seconds')
+
+        duration_left_ms = duration_ms % self._recognize_length_ms
+        if duration_left_ms < 2000:
+            scan_duration_ms = duration_ms - duration_left_ms
+        else:
+            scan_duration_ms = duration_ms
+
+        logger.info(
+            f'{filename} File total duration {duration_ms / 1000} seconds, Scan from 0 to {scan_duration_ms / 1000}')
 
         for t_ms in range(self.start_time_ms, duration_ms, self._recognize_length_ms):
             rec_result = self._recognize(filename, t_ms)
@@ -699,7 +708,6 @@ class ACRCloudScan:
             target_custom_basename = os.path.basename(custom_file_output_filename)
             music_output_filename = folder_path + target_music_basename
             custom_file_output_filename = folder_path + target_custom_basename
-
 
         if self.scan_type == ScanType.SCAN_TYPE_MUSIC:
             self.export(total_music_results, music_output_filename, output_format)
