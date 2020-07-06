@@ -3,588 +3,704 @@
 
 # Do not change this file
 
-from dataclasses import dataclass
-from typing import Optional, Any, List, TypeVar, Type, Callable, cast, Union
-from datetime import datetime
-import dateutil.parser
 
-T = TypeVar("T")
-
-
-def from_str(x: Any) -> str:
-    assert isinstance(x, str)
-    return x
-
-
-def from_none(x: Any) -> Any:
-    assert x is None
-    return x
-
-
-def from_union(fs, x):
-    for f in fs:
-        try:
-            return f(x)
-        except:
-            pass
-    assert False
-
-
-def is_type(t: Type[T], x: Any) -> T:
-    assert isinstance(x, t)
-    return x
-
-
-def from_list(f: Callable[[Any], T], x: Any) -> List[T]:
-    assert isinstance(x, list)
-    return [f(y) for y in x]
-
-
-def to_class(c: Type[T], x: Any) -> dict:
-    assert isinstance(x, c)
-    return cast(Any, x).to_dict()
-
-
-def from_int(x: Any) -> int:
-    assert isinstance(x, int) and not isinstance(x, bool)
-    return x
-
-
-def from_datetime(x: Any) -> datetime:
-    return dateutil.parser.parse(x)
-
-
-def from_float(x: Any) -> float:
-    assert isinstance(x, (float, int)) and not isinstance(x, bool)
-    return float(x)
-
-
-def to_float(x: Any) -> float:
-    assert isinstance(x, float)
-    return x
-
-
-@dataclass
 class Status:
     def __init__(self, msg, code, version):
         self.msg = msg
         self.code = code
         self.version = version
 
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
+
     @staticmethod
     def from_dict(obj):
-        assert isinstance(obj, dict)
-        msg = from_union([from_str, from_none], obj.get("msg"))
-        code = from_union([from_int, from_none], obj.get("code"))
-        version = from_union([from_str, from_none], obj.get("version"))
+        msg = obj.get("msg")
+        code = obj.get("code")
+        version = obj.get("version")
         return Status(msg, code, version)
 
     def to_dict(self):
-        result = {"msg": from_union([from_str, from_none], self.msg),
-                  "code": from_union([from_int, from_none], self.code),
-                  "version": from_union([from_str, from_none], self.version)}
+        result = {"msg": self.msg,
+                  "code": self.code,
+                  "version": self.version}
         return result
 
 
-@dataclass
 class Response:
-    def __init__(self, status, metadata, cost_time, result_type):
+    def __init__(self, status=None, metadata=None, cost_time=None, result_type=None):
         self.status = status
         self.metadata = metadata
         self.cost_time = cost_time
         self.result_type = result_type
 
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
+
     @staticmethod
     def from_dict(obj):
-        assert isinstance(obj, dict)
-        status = from_union([Status.from_dict, from_none], obj.get("status"))
-        metadata = from_union([Metadata.from_dict, from_none], obj.get("metadata"))
-        cost_time = from_union([from_float, from_none], obj.get("cost_time"))
-        result_type = from_union([from_int, from_none], obj.get("result_type"))
-        return Response(status, metadata, cost_time, result_type)
+        if obj:
+            status = Status.from_dict(obj.get("status"))
+            metadata = Metadata.from_dict(obj.get("metadata"))
+            cost_time = obj.get("cost_time")
+            result_type = obj.get("result_type")
+            return Response(status, metadata, cost_time, result_type)
+        else:
+            return Response()
 
     def to_dict(self):
-        result = {"status": from_union([lambda x: to_class(Status, x), from_none], self.status),
-                  "metadata": from_union([lambda x: to_class(Metadata, x), from_none], self.metadata),
-                  "cost_time": from_union([to_float, from_none], self.cost_time),
-                  "result_type": from_union([from_int, from_none], self.result_type)}
+        result = {"status": self.status.to_dict() if self.status else None,
+                  "metadata": self.metadata.to_dict() if self.metadata else None,
+                  "cost_time": self.cost_time,
+                  "result_type": self.result_type
+                  }
         return result
 
 
-@dataclass
 class Metadata:
-    def __init__(self, timestamp_utc, custom_files, music):
+    def __init__(self, timestamp_utc=None, custom_files=None, music=None):
         self.timestamp_utc = timestamp_utc
         self.custom_files = custom_files
         self.music = music
 
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
+
     @staticmethod
     def from_dict(obj):
-        assert isinstance(obj, dict)
-        timestamp_utc = from_union([from_datetime, from_none], obj.get("timestamp_utc"))
-        custom_files = from_union([lambda x: from_list(CustomFile.from_dict, x), from_none], obj.get("custom_files"))
-        music = from_union([lambda x: from_list(Music.from_dict, x), from_none], obj.get("music"))
-        return Metadata(timestamp_utc, custom_files, music)
+        if obj:
+            timestamp_utc = obj.get("timestamp_utc")
+            custom_files = obj.get("custom_files")
+            music = obj.get("music")
+
+            return Metadata(timestamp_utc,
+                            [CustomFile.from_dict(c) for c in custom_files] if custom_files else None,
+                            [Music.from_dict(m) for m in music] if music else None
+                            )
+        else:
+            return Metadata()
 
     def to_dict(self):
-        result = {"timestamp_utc": from_union([lambda x: x.isoformat(), from_none], self.timestamp_utc),
-                  "custom_files": from_union([lambda x: from_list(lambda x: to_class(CustomFile, x), x), from_none],
-                                             self.custom_files),
-                  "music": from_union([lambda x: from_list(lambda x: to_class(Music, x), x), from_none], self.music)}
+        result = {"timestamp_utc": self.timestamp_utc,
+                  "custom_files": [c.to_dict() for c in self.custom_files] if self.custom_files else None,
+                  "music": [m.to_dict() for m in self.music] if self.music else None}
         return result
 
 
-@dataclass
-class GenreClass:
-    name: Optional[str] = None
-    id: Optional[int] = None
-
-    @staticmethod
-    def from_dict(obj: Any) -> 'GenreClass':
-        assert isinstance(obj, dict)
-        name = from_union([from_str, from_none], obj.get("name"))
-        return GenreClass(name)
-
-    def to_dict(self) -> dict:
-        result: dict = {"name": from_union([from_str, from_none], self.name),
-                        }
-        return result
-
-
-@dataclass
-class GenresNullClass:
-    pass
-
-    @staticmethod
-    def from_dict(obj: Any) -> 'GenresNullClass':
-        assert isinstance(obj, dict)
-        return GenresNullClass()
-
-    def to_dict(self) -> dict:
-        result: dict = {}
-        return result
-
-
-@dataclass
 class ExternalIDS:
-    isrc: Optional[str] = None
-    upc: Optional[str] = None
+    def __init__(self, isrc=None, upc=None):
+        self.isrc = isrc
+        self.upc = upc
+
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'ExternalIDS':
-        assert isinstance(obj, dict)
-        isrc = from_union([from_str, from_none], obj.get("isrc"))
-        upc = from_union([from_str, from_none], obj.get("upc"))
-        return ExternalIDS(isrc, upc)
+    def from_dict(obj):
+        if obj:
+            isrc = obj.get("isrc")
+            upc = obj.get("upc")
+            return ExternalIDS(isrc, upc)
+        else:
+            return ExternalIDS()
 
     def to_dict(self) -> dict:
-        result: dict = {"isrc": from_union([from_str, from_none], self.isrc),
-                        "upc": from_union([from_str, from_none], self.upc)}
+        result = {"isrc": self.isrc,
+                  "upc": self.upc}
         return result
 
 
-@dataclass
-class DeezerAlbum:
-    id: Optional[int] = None
-    name: Optional[str] = None
+class Item:
+    def __init__(self, id=None, name=None, ):
+        self.id = id
+        self.name = name
+
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'DeezerAlbum':
-        assert isinstance(obj, dict)
-        id = from_union([from_int, from_str, from_none], obj.get("id"))
-        name = from_union([from_str, from_none], obj.get("name"))
+    def from_dict(obj):
+        if obj:
+            id = obj.get("id")
 
-        return DeezerAlbum(id, name)
+            name = obj.get("name")
+            return Item(id, name)
+        else:
+            return Item()
 
-    def to_dict(self) -> dict:
-        result: dict = {"id": from_union([from_int, from_str, from_none], self.id),
-                        "name": from_union([from_str, from_none], self.name)}
+    def to_dict(self):
+        result = {"id": self.id,
+                  "name": self.name
+                  }
         return result
 
 
-@dataclass
 class Deezer:
-    genres: Union[List[DeezerAlbum], GenresNullClass, None]
+    def __init__(self, genres=None, album=Item(), artists=None, track=Item()):
+        if genres is None:
+            genres = [Item()]
+        if artists is None:
+            artists = [Item()]
+        self.genres = genres
+        self.album = album
+        self.artists = artists
+        self.track = track
 
-    album: Optional[DeezerAlbum] = None
-    artists: Optional[List[DeezerAlbum]] = None
-    track: Optional[DeezerAlbum] = None
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Deezer':
-        assert isinstance(obj, dict)
-        genres = from_union([lambda x: from_list(DeezerAlbum.from_dict, x), GenresNullClass.from_dict, from_none],
-                            obj.get("genres"))
-        track = from_union([DeezerAlbum.from_dict, from_none], obj.get("track"))
-        artists = from_union([lambda x: from_list(DeezerAlbum.from_dict, x), from_none], obj.get("artists"))
-        album = from_union([DeezerAlbum.from_dict, from_none], obj.get("album"))
-        return Deezer(genres, track, artists, album)
+    def from_dict(obj):
+        if obj:
+            genres = obj.get("genres")
+            track = obj.get("track")
+            artists = obj.get("artists")
+            album = obj.get("album")
+            return Deezer(genres=[Item.from_dict(g) for g in genres] if genres else [Item()],
+                          album=Item.from_dict(track),
+                          artists=[Item.from_dict(a) for a in artists] if artists else [Item()],
+                          track=Item.from_dict(album)
+                          )
+        else:
+            return Deezer()
 
-    def to_dict(self) -> dict:
-        result: dict = {"genres": from_union(
-            [lambda x: from_list(lambda x: to_class(DeezerAlbum, x), x), lambda x: to_class(GenresNullClass, x),
-             from_none], self.genres), "track": from_union([lambda x: to_class(DeezerAlbum, x), from_none], self.track),
-            "artists": from_union([lambda x: from_list(lambda x: to_class(DeezerAlbum, x), x), from_none],
-                                  self.artists),
-            "album": from_union([lambda x: to_class(DeezerAlbum, x), from_none], self.album)}
+    def to_dict(self):
+        result = {"genres": [g.to_dict() for g in self.genres],
+                  "track": self.track.to_dict(),
+                  "artists": [a.to_dict() for a in self.artists],
+                  "album": self.album.to_dict()
+                  }
         return result
 
 
-@dataclass
-class SpotifyAlbum:
-    id: Optional[str] = None
-    name: Optional[str] = None
-
-    @staticmethod
-    def from_dict(obj: Any) -> 'SpotifyAlbum':
-        assert isinstance(obj, dict)
-        id = from_union([from_str, from_none], obj.get("id"))
-        name = from_union([from_str, from_none], obj.get("name"))
-
-        return SpotifyAlbum(id, name)
-
-    def to_dict(self) -> dict:
-        result: dict = {"id": from_union([from_str, from_none], self.id),
-                        "name": from_union([from_str, from_none], self.name)}
-
-        return result
-
-
-@dataclass
 class Spotify:
-    album: Optional[SpotifyAlbum] = None
-    artists: Optional[List[SpotifyAlbum]] = None
-    track: Optional[SpotifyAlbum] = None
+    def __init__(self, album=Item(), artists=None, track=Item()):
+        if artists is None:
+            artists = [Item()]
+        self.album = album
+        self.artists = artists
+        self.track = track
+
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Spotify':
-        assert isinstance(obj, dict)
-        album = from_union([SpotifyAlbum.from_dict, from_none], obj.get("album"))
-        artists = from_union([lambda x: from_list(SpotifyAlbum.from_dict, x), from_none], obj.get("artists"))
-        track = from_union([SpotifyAlbum.from_dict, from_none], obj.get("track"))
-        return Spotify(album, artists, track)
+    def from_dict(obj):
+        if obj:
+            album = obj.get("album")
+            artists = obj.get("artists")
+            track = obj.get("track")
 
-    def to_dict(self) -> dict:
-        result: dict = {"album": from_union([lambda x: to_class(SpotifyAlbum, x), from_none], self.album),
-                        "artists": from_union([lambda x: from_list(lambda x: to_class(SpotifyAlbum, x), x), from_none],
-                                              self.artists),
-                        "track": from_union([lambda x: to_class(SpotifyAlbum, x), from_none], self.track)}
+            return Spotify(Item.from_dict(album) if album else Item(),
+                           [Item.from_dict(a) for a in artists] if artists else [Item()],
+                           Item.from_dict(track) if track else Item()
+                           )
+        else:
+            return Spotify()
+
+    def to_dict(self):
+        result = {"album": self.album.to_dict(),
+                  "artists": [a.to_dict() for a in self.artists],
+                  "track": self.track.to_dict()
+                  }
         return result
 
 
-@dataclass
 class Youtube:
-    vid: Optional[str] = None
+    def __init__(self, vid=None):
+        self.vid = vid
+
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Youtube':
-        assert isinstance(obj, dict)
-        vid = from_union([from_str, from_none], obj.get("vid"))
-        return Youtube(vid)
+    def from_dict(obj):
+        if obj:
+            vid = obj.get("vid")
+            return Youtube(vid)
+        else:
+            return Youtube()
 
-    def to_dict(self) -> dict:
-        result: dict = {"vid": from_union([from_str, from_none], self.vid)}
+    def to_dict(self):
+        result = {"vid": self.vid}
         return result
 
 
-@dataclass
 class ExternalMetadata:
-    youtube: Optional[Youtube] = None
-    spotify: Optional[Spotify] = None
-    deezer: Optional[Deezer] = None
+    def __init__(self, youtube=None, spotify=None, deezer=None):
+        self.youtube = youtube
+        self.spotify = spotify
+        self.deezer = deezer
+
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'ExternalMetadata':
-        assert isinstance(obj, dict)
-        youtube = from_union([Youtube.from_dict, from_none], obj.get("youtube"))
-        spotify = from_union([Spotify.from_dict, from_none], obj.get("spotify"))
-        deezer = from_union([Deezer.from_dict, from_none], obj.get("deezer"))
-        return ExternalMetadata(youtube, spotify, deezer)
+    def from_dict(obj):
+        if obj:
+            youtube = Youtube.from_dict(obj.get("youtube"))
+            spotify = Spotify.from_dict(obj.get("spotify"))
+            deezer = Deezer.from_dict(obj.get("deezer"))
+            return ExternalMetadata(youtube, spotify, deezer)
+        else:
+            return ExternalMetadata()
 
-    def to_dict(self) -> dict:
-        result: dict = {"youtube": from_union([lambda x: to_class(Youtube, x), from_none], self.youtube),
-                        "spotify": from_union([lambda x: to_class(Spotify, x), from_none], self.spotify),
-                        "deezer": from_union([lambda x: to_class(Deezer, x), from_none], self.deezer)}
+    def to_dict(self):
+        result = {"youtube": self.youtube.to_dict() if self.youtube else None,
+                  "spotify": self.spotify.to_dict() if self.spotify else None,
+                  "deezer": self.deezer.to_dict() if self.deezer else None
+                  }
         return result
 
 
-@dataclass
 class Contributors:
-    composers: Optional[List[str]] = None
-    lyricists: Optional[List[str]] = None
+    def __init__(self, composers=None, lyricists=None):
+        self.composers = composers
+        self.lyricists = lyricists
+
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Contributors':
-        assert isinstance(obj, dict)
-        composers = from_union([lambda x: from_list(from_str, x), from_none], obj.get("composers"))
-        lyricists = from_union([lambda x: from_list(from_str, x), from_none], obj.get("lyricists"))
-        return Contributors(composers, lyricists)
+    def from_dict(obj):
+        if obj:
+            composers = obj.get("composers")
+            lyricists = obj.get("lyricists")
+            return Contributors([co for co in composers] if composers else None,
+                                [ly for ly in lyricists] if lyricists else None)
+        else:
+            return Contributors()
 
-    def to_dict(self) -> dict:
-        result: dict = {"composers": from_union([lambda x: from_list(from_str, x), from_none], self.composers),
-                        "lyricists": from_union([lambda x: from_list(from_str, x), from_none], self.lyricists)}
+    def to_dict(self):
+        result = {"composers": [co for co in self.composers] if self.composers else None,
+                  "lyricists": [ly for ly in self.lyricists] if self.lyricists else None
+                  }
         return result
 
 
-@dataclass
 class Lyrics:
-    copyrights: Optional[List[str]] = None
+    def __init__(self, copyrights=None):
+        self.copyrights = copyrights
+
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Lyrics':
-        assert isinstance(obj, dict)
-        copyrights = from_union([lambda x: from_list(from_str, x), from_none], obj.get("copyrights"))
-        return Lyrics(copyrights)
+    def from_dict(obj):
+        if obj:
+            copyrights = obj.get("copyrights")
+            return Lyrics([c for c in copyrights] if copyrights else None)
+        else:
+            return Lyrics()
 
-    def to_dict(self) -> dict:
-        result: dict = {"copyrights": from_union([lambda x: from_list(from_str, x), from_none], self.copyrights)}
+    def to_dict(self):
+        result = {"copyrights": [c for c in self.copyrights] if self.copyrights else None
+                  }
         return result
 
 
-@dataclass
 class Music:
-    external_ids: Optional[ExternalIDS] = None
-    sample_begin_time_offset_ms: Optional[int] = None
-    sample_end_time_offset_ms: Optional[int] = None
-    label: Optional[str] = None
-    duration_ms: Optional[int] = None
-    acrid: Optional[str] = None
-    db_begin_time_offset_ms: Optional[int] = None
-    play_offset_ms: Optional[int] = None
-    release_date: Optional[str] = None
-    genres: Optional[List[GenreClass]] = None
-    score: Optional[int] = None
-    title: Optional[str] = None
-    external_metadata: Optional[ExternalMetadata] = None
-    album: Optional[GenreClass] = None
-    db_end_time_offset_ms: Optional[int] = None
-    result_from: Optional[int] = None
-    artists: Optional[List[GenreClass]] = None
-    contributors: Optional[Contributors] = None
-    lyrics: Optional[Lyrics] = None
-    language: Optional[str] = None
+    def __init__(self,
+                 external_ids=None,
+                 sample_begin_time_offset_ms=None,
+                 sample_end_time_offset_ms=None,
+                 label=None,
+                 duration_ms=None,
+                 acrid=None,
+                 db_begin_time_offset_ms=None,
+                 play_offset_ms=None,
+                 release_date=None,
+                 genres=None,
+                 score=None,
+                 title=None,
+                 external_metadata=None,
+                 album=None,
+                 db_end_time_offset_ms=None,
+                 result_from=None,
+                 artists=None,
+                 contributors=None,
+                 lyrics=None,
+                 language=None):
+        self.external_ids = external_ids
+        self.sample_begin_time_offset_ms = sample_begin_time_offset_ms
+        self.sample_end_time_offset_ms = sample_end_time_offset_ms
+        self.label = label
+        self.duration_ms = duration_ms
+        self.acrid = acrid
+        self.db_begin_time_offset_ms = db_begin_time_offset_ms
+        self.play_offset_ms = play_offset_ms
+        self.release_date = release_date
+        self.genres = genres
+        self.score = score
+        self.title = title
+        self.external_metadata = external_metadata
+        self.album = album
+        self.db_end_time_offset_ms = db_end_time_offset_ms
+        self.result_from = result_from
+        self.artists = artists
+        self.contributors = contributors
+        self.lyrics = lyrics
+        self.language = language
+
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Music':
-        assert isinstance(obj, dict)
-        external_ids = from_union([ExternalIDS.from_dict, from_none], obj.get("external_ids"))
-        sample_begin_time_offset_ms = from_union([from_int, from_none], obj.get("sample_begin_time_offset_ms"))
-        sample_end_time_offset_ms = from_union([from_int, from_none], obj.get("sample_end_time_offset_ms"))
-        label = from_union([from_str, from_none], obj.get("label"))
-        duration_ms = from_union([from_int, from_none], obj.get("duration_ms"))
-        acrid = from_union([from_str, from_none], obj.get("acrid"))
-        db_begin_time_offset_ms = from_union([from_int, from_none], obj.get("db_begin_time_offset_ms"))
-        play_offset_ms = from_union([from_int, from_none], obj.get("play_offset_ms"))
-        release_date = from_union([from_str, from_none], obj.get("release_date"))
-        genres = from_union([lambda x: from_list(GenreClass.from_dict, x), from_none], obj.get("genres"))
-        score = from_union([from_int, from_none], obj.get("score"))
-        title = from_union([from_str, from_none], obj.get("title"))
-        external_metadata = from_union([ExternalMetadata.from_dict, from_none], obj.get("external_metadata"))
-        album = from_union([GenreClass.from_dict, from_none], obj.get("album"))
-        db_end_time_offset_ms = from_union([from_int, from_none], obj.get("db_end_time_offset_ms"))
-        result_from = from_union([from_int, from_none], obj.get("result_from"))
-        artists = from_union([lambda x: from_list(GenreClass.from_dict, x), from_none], obj.get("artists"))
+    def from_dict(obj):
+        if obj:
+            external_ids = ExternalIDS.from_dict(obj.get("external_ids"))
+            sample_begin_time_offset_ms = obj.get("sample_begin_time_offset_ms")
+            sample_end_time_offset_ms = obj.get("sample_end_time_offset_ms")
+            label = obj.get("label")
+            duration_ms = obj.get("duration_ms")
+            acrid = obj.get("acrid")
+            db_begin_time_offset_ms = obj.get("db_begin_time_offset_ms")
+            play_offset_ms = obj.get("play_offset_ms")
+            release_date = obj.get("release_date")
+            genres = [Item.from_dict(g) for g in obj.get("genres")] if obj.get("genres") else None
+            score = obj.get("score")
+            title = obj.get("title")
+            external_metadata = ExternalMetadata.from_dict(obj.get("external_metadata"))
+            album = Item.from_dict(obj.get("album"))
+            db_end_time_offset_ms = obj.get("db_end_time_offset_ms")
+            result_from = obj.get("result_from")
+            artists = [Item.from_dict(a) for a in obj.get("artists")] if obj.get("artists") else None
+            contributors = Contributors.from_dict(obj.get("contributors"))
+            lyrics = Lyrics.from_dict(obj.get("lyrics"))
+            language = obj.get("language")
 
-        contributors = from_union([Contributors.from_dict, from_none], obj.get("contributors"))
-        lyrics = from_union([Lyrics.from_dict, from_none], obj.get("lyrics"))
-        language = from_union([from_str, from_none], obj.get("language"))
+            return Music(external_ids, sample_begin_time_offset_ms, sample_end_time_offset_ms, label, duration_ms,
+                         acrid,
+                         db_begin_time_offset_ms, play_offset_ms, release_date, genres, score, title, external_metadata,
+                         album, db_end_time_offset_ms, result_from, artists, contributors, lyrics, language)
+        else:
+            return None
 
-        return Music(external_ids, sample_begin_time_offset_ms, sample_end_time_offset_ms, label, duration_ms, acrid,
-                     db_begin_time_offset_ms, play_offset_ms, release_date, genres, score, title, external_metadata,
-                     album, db_end_time_offset_ms, result_from, artists, contributors, lyrics, language)
-
-    def to_dict(self) -> dict:
-        result: dict = {"external_ids": from_union([lambda x: to_class(ExternalIDS, x), from_none], self.external_ids),
-                        "sample_begin_time_offset_ms": from_union([from_int, from_none],
-                                                                  self.sample_begin_time_offset_ms),
-                        "sample_end_time_offset_ms": from_union([from_int, from_none], self.sample_end_time_offset_ms),
-                        "label": from_union([from_str, from_none], self.label),
-                        "duration_ms": from_union([from_int, from_none], self.duration_ms),
-                        "acrid": from_union([from_str, from_none], self.acrid),
-                        "db_begin_time_offset_ms": from_union([from_int, from_none], self.db_begin_time_offset_ms),
-                        "play_offset_ms": from_union([from_int, from_none], self.play_offset_ms),
-                        "release_date": from_union([from_str, from_none], self.release_date),
-                        "genres": from_union([lambda x: from_list(lambda x: to_class(GenreClass, x), x), from_none],
-                                             self.genres), "score": from_union([from_int, from_none], self.score),
-                        "title": from_union([from_str, from_none], self.title),
-                        "external_metadata": from_union([lambda x: to_class(ExternalMetadata, x), from_none],
-                                                        self.external_metadata),
-                        "album": from_union([lambda x: to_class(GenreClass, x), from_none], self.album),
-                        "db_end_time_offset_ms": from_union([from_int, from_none], self.db_end_time_offset_ms),
-                        "result_from": from_union([from_int, from_none], self.result_from),
-                        "artists": from_union([lambda x: from_list(lambda x: to_class(GenreClass, x), x), from_none],
-                                              self.artists),
-                        "contributors": from_union([lambda x: to_class(Contributors, x), from_none], self.contributors),
-                        "lyrics": from_union([lambda x: to_class(Lyrics, x), from_none], self.lyrics),
-                        "language": from_union([from_str, from_none], self.language)
-                        }
+    def to_dict(self):
+        result = {"external_ids": ExternalIDS.to_dict(self.external_ids) if self.external_ids else None,
+                  "sample_begin_time_offset_ms": self.sample_begin_time_offset_ms,
+                  "sample_end_time_offset_ms": self.sample_end_time_offset_ms,
+                  "label": self.label,
+                  "duration_ms": self.duration_ms,
+                  "acrid": self.acrid,
+                  "db_begin_time_offset_ms": self.db_begin_time_offset_ms,
+                  "play_offset_ms": self.play_offset_ms,
+                  "release_date": self.release_date,
+                  "genres": [g.to_dict() for g in self.genres] if self.genres else None,
+                  "score": self.score,
+                  "title": self.title,
+                  "external_metadata": self.external_metadata.to_dict() if self.external_metadata else None,
+                  "album": self.album.to_dict() if self.album else None,
+                  "db_end_time_offset_ms": self.db_end_time_offset_ms,
+                  "result_from": self.result_from,
+                  "artists": [a.to_dict() for a in self.artists] if self.artists else None,
+                  "contributors": self.contributors.to_dict() if self.contributors else None,
+                  "lyrics": self.lyrics.to_dict() if self.lyrics else None,
+                  "language": self.language
+                  }
         return result
 
 
-@dataclass
 class CustomFile:
-    audio_id: Union[int, None, str]
-    bucket_id: Optional[int] = None
-    duration_ms: Optional[int] = None
-    sample_begin_time_offset_ms: Optional[int] = None
-    sample_end_time_offset_ms: Optional[int] = None
-    title: Optional[str] = None
-    db_end_time_offset_ms: Optional[int] = None
-    db_begin_time_offset_ms: Optional[int] = None
-    acrid: Optional[str] = None
-    play_offset_ms: Optional[int] = None
-    score: Optional[int] = None
+    def __init__(self,
+                 audio_id=None,
+                 bucket_id=None,
+                 duration_ms=None,
+                 sample_begin_time_offset_ms=None,
+                 sample_end_time_offset_ms=None,
+                 title=None,
+                 db_end_time_offset_ms=None,
+                 db_begin_time_offset_ms=None,
+                 acrid=None,
+                 play_offset_ms=None,
+                 score=None
+                 ):
+        self.audio_id = audio_id
+        self.bucket_id = bucket_id
+        self.duration_ms = duration_ms
+        self.sample_begin_time_offset_ms = sample_begin_time_offset_ms
+        self.sample_end_time_offset_ms = sample_end_time_offset_ms
+        self.title = title
+        self.db_end_time_offset_ms = db_end_time_offset_ms
+        self.db_begin_time_offset_ms = db_begin_time_offset_ms
+        self.acrid = acrid
+        self.play_offset_ms = play_offset_ms
+        self.score = score
+
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'CustomFile':
-        assert isinstance(obj, dict)
-        audio_id = from_union([from_int, from_str, from_none], obj.get("audio_id"))
-        bucket_id = from_union([from_none, lambda x: int(from_str(x))], obj.get("bucket_id"))
-        duration_ms = from_union([from_none, lambda x: int(from_str(x))], obj.get("duration_ms"))
-        sample_begin_time_offset_ms = from_union([from_int, from_none], obj.get("sample_begin_time_offset_ms"))
-        sample_end_time_offset_ms = from_union([from_int, from_none], obj.get("sample_end_time_offset_ms"))
-        title = from_union([from_str, from_none], obj.get("title"))
-        db_end_time_offset_ms = from_union([from_int, from_none], obj.get("db_end_time_offset_ms"))
-        db_begin_time_offset_ms = from_union([from_int, from_none], obj.get("db_begin_time_offset_ms"))
-        acrid = from_union([from_str, from_none], obj.get("acrid"))
-        play_offset_ms = from_union([from_int, from_none], obj.get("play_offset_ms"))
-        score = from_union([from_int, ], obj.get("score"))
+    def from_dict(obj):
+        if obj:
+            audio_id = obj.get("audio_id")
+            bucket_id = obj.get("bucket_id")
+            duration_ms = obj.get("duration_ms")
+            sample_begin_time_offset_ms = obj.get("sample_begin_time_offset_ms")
+            sample_end_time_offset_ms = obj.get("sample_end_time_offset_ms")
+            title = obj.get("title")
+            db_end_time_offset_ms = obj.get("db_end_time_offset_ms")
+            db_begin_time_offset_ms = obj.get("db_begin_time_offset_ms")
+            acrid = obj.get("acrid")
+            play_offset_ms = obj.get("play_offset_ms")
+            score = obj.get("score")
 
-        return CustomFile(audio_id, bucket_id, duration_ms, sample_begin_time_offset_ms,
-                          sample_end_time_offset_ms, title, db_end_time_offset_ms, db_begin_time_offset_ms, acrid,
-                          play_offset_ms, score)
+            return CustomFile(audio_id, bucket_id, duration_ms, sample_begin_time_offset_ms,
+                              sample_end_time_offset_ms, title, db_end_time_offset_ms, db_begin_time_offset_ms, acrid,
+                              play_offset_ms, score)
+        else:
+            return CustomFile()
 
-    def to_dict(self) -> dict:
-        result: dict = {"audio_id": from_union([from_int, from_str, from_none], self.audio_id),
-                        "bucket_id": from_union([lambda x: from_none((lambda x: is_type(type(None), x))(x)),
-                                                 lambda x: from_str(
-                                                     (lambda x: str((lambda x: is_type(int, x))(x)))(x))],
-                                                self.bucket_id),
-                        "duration_ms": from_union([lambda x: from_none((lambda x: is_type(type(None), x))(x)),
-                                                   lambda x: from_str(
-                                                       (lambda x: str((lambda x: is_type(int, x))(x)))(x))],
-                                                  self.duration_ms),
-                        "sample_begin_time_offset_ms": from_union([from_int, from_none],
-                                                                  self.sample_begin_time_offset_ms),
-                        "sample_end_time_offset_ms": from_union([from_int, from_none], self.sample_end_time_offset_ms),
-                        "title": from_union([from_str, from_none], self.title),
-                        "db_end_time_offset_ms": from_union([from_int, from_none], self.db_end_time_offset_ms),
-                        "db_begin_time_offset_ms": from_union([from_int, from_none], self.db_begin_time_offset_ms),
-                        "acrid": from_union([from_str, from_none], self.acrid),
-                        "play_offset_ms": from_union([from_int, from_none], self.play_offset_ms),
-                        "score": from_union([from_int, from_none], self.score)
-                        }
+    def to_dict(self):
+        result = {"audio_id": self.audio_id,
+                  "bucket_id": self.bucket_id,
+                  "duration_ms": self.duration_ms,
+                  "sample_begin_time_offset_ms": self.sample_begin_time_offset_ms,
+                  "sample_end_time_offset_ms": self.sample_end_time_offset_ms,
+                  "title": self.title,
+                  "db_end_time_offset_ms": self.db_end_time_offset_ms,
+                  "db_begin_time_offset_ms": self.db_begin_time_offset_ms,
+                  "acrid": self.acrid,
+                  "play_offset_ms": self.play_offset_ms,
+                  "score": self.score
+                  }
         return result
 
 
-@dataclass
 class BaseResult:
-    filename: Optional[str] = None
-    status_code: Optional[int] = None
-    start_time_ms: Optional[int] = None
-    end_time_ms: Optional[int] = None
-    duration_ms: Optional[int] = None
-    played_duration_ms: Optional[int] = None
-    title: Optional[str] = None
-    score: Optional[int] = None
-    acrid: Optional[str] = None
-    sample_begin_time_offset_ms: Optional[int] = None
-    sample_end_time_offset_ms: Optional[int] = None
-    db_begin_time_offset_ms: Optional[int] = None
-    db_end_time_offset_ms: Optional[int] = None
+    def __init__(self,
+                 filename=None,
+                 status_code=None,
+                 start_time_ms=None,
+                 end_time_ms=None,
+                 duration_ms=None,
+                 played_duration_ms=None,
+                 title=None,
+                 score=None,
+                 acrid=None,
+                 sample_begin_time_offset_ms=None,
+                 sample_end_time_offset_ms=None,
+                 db_begin_time_offset_ms=None,
+                 db_end_time_offset_ms=None):
+        self.filename = filename
+        self.status_code = status_code
+        self.start_time_ms = start_time_ms
+        self.end_time_ms = end_time_ms
+        self.duration_ms = duration_ms
+        self.played_duration_ms = played_duration_ms
+        self.title = title
+        self.score = score
+        self.acrid = acrid
+        self.sample_begin_time_offset_ms = sample_begin_time_offset_ms
+        self.sample_end_time_offset_ms = sample_end_time_offset_ms
+        self.db_begin_time_offset_ms = db_begin_time_offset_ms
+        self.db_end_time_offset_ms = db_end_time_offset_ms
+
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
 
 class MusicResult(BaseResult):
-    artists_names: Optional[str] = None
-    isrc: Optional[str] = None
-    upc: Optional[str] = None
-    spotify_id: Optional[str] = None
-    youtube_id: Optional[str] = None
-    deezer_id: Optional[str] = None
-    release_date: Optional[str] = None
-    label: Optional[str] = None
-    composers: Optional[str] = None
-    lyricists: Optional[str] = None
-    lyrics: Optional[str] = None
-    language: Optional[str] = None
-    primary_result: Optional[Music] = None
-    similar_results: Optional[List[Music]] = None
 
-    def to_dict(self) -> dict:
-        result: dict = {"filename": from_union([from_str, from_none], self.filename),
-                        "status_code": from_union([from_int, from_none], self.status_code),
-                        "start_time_ms": from_union([from_str, from_int, from_none], self.start_time_ms),
-                        "end_time_ms": from_union([from_str, from_int, from_none], self.end_time_ms),
-                        "duration_ms": from_union([from_int, from_none], self.duration_ms),
-                        "played_duration_ms": from_union([from_int, from_none], self.played_duration_ms),
-                        "title": from_union([from_str, from_none], self.title),
-                        "score": from_union([from_int, from_none], self.score),
-                        "similar_results": from_union([lambda x: from_list(lambda x: to_class(Music, x), x), from_none],
-                                                      self.similar_results),
-                        "artists_names": from_union([from_str, from_none], self.artists_names),
-                        "isrc": from_union([from_str, from_none], self.isrc),
-                        "upc": from_union([from_str, from_none], self.upc),
-                        "spotify_id": from_union([from_str, from_none], self.spotify_id),
-                        "youtube_id": from_union([from_str, from_none], self.youtube_id),
-                        "deezer_id": from_union([from_str, from_int, from_none], self.deezer_id),
-                        "release_date": from_union([from_str, from_none], self.release_date),
-                        "label": from_union([from_str, from_none], self.label),
-                        "acrid": from_union([from_str, from_none], self.acrid),
+    def __init__(self,
+                 artists_names=None,
+                 isrc=None,
+                 upc=None,
+                 spotify_id=None,
+                 youtube_id=None,
+                 deezer_id=None,
+                 release_date=None,
+                 label=None,
+                 composers=None,
+                 lyricists=None,
+                 lyrics=None,
+                 language=None,
+                 primary_result=None,
+                 similar_results=None,
+                 filename=None,
+                 status_code=None,
+                 start_time_ms=None,
+                 end_time_ms=None,
+                 duration_ms=None,
+                 played_duration_ms=None,
+                 title=None,
+                 score=None,
+                 acrid=None,
+                 sample_begin_time_offset_ms=None,
+                 sample_end_time_offset_ms=None,
+                 db_begin_time_offset_ms=None,
+                 db_end_time_offset_ms=None):
+        super().__init__(filename, status_code, start_time_ms, end_time_ms, duration_ms, played_duration_ms, title,
+                         score, acrid, sample_begin_time_offset_ms, sample_end_time_offset_ms, db_begin_time_offset_ms,
+                         db_end_time_offset_ms)
+        self.artists_names = artists_names
+        self.isrc = isrc
+        self.upc = upc
+        self.spotify_id = spotify_id
+        self.youtube_id = youtube_id
+        self.deezer_id = deezer_id
+        self.release_date = release_date
+        self.label = label
+        self.composers = composers
+        self.lyricists = lyricists
+        self.lyrics = lyrics
+        self.language = language
+        self.primary_result = primary_result
+        self.similar_results = similar_results
 
-                        "composers": from_union([from_str, from_none], self.composers),
-                        "lyricists": from_union([from_str, from_none], self.composers),
-                        "lyrics": from_union([from_str, from_none], self.lyrics),
-                        "language": from_union([from_str, from_none], self.language),
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
 
-                        "sample_begin_time_offset_ms": from_union([from_int, from_none],
-                                                                  self.sample_begin_time_offset_ms),
-                        "sample_end_time_offset_ms": from_union([from_int, from_none],
-                                                                self.sample_end_time_offset_ms),
-                        "db_begin_time_offset_ms": from_union([from_int, from_none],
-                                                              self.db_begin_time_offset_ms),
-                        "db_end_time_offset_ms": from_union([from_int, from_none],
-                                                            self.db_end_time_offset_ms),
-                        }
+    def to_dict(self):
+        result = {"filename": self.filename,
+                  "status_code": self.status_code,
+                  "start_time_ms": self.start_time_ms,
+                  "end_time_ms": self.end_time_ms,
+                  "duration_ms": self.duration_ms,
+                  "played_duration_ms": self.played_duration_ms,
+                  "title": self.title,
+                  "score": self.score,
+                  "similar_results": [sr.to_dict() for sr in self.similar_results] if self.similar_results else None,
+                  "artists_names": self.artists_names,
+                  "isrc": self.isrc,
+                  "upc": self.upc,
+                  "spotify_id": self.spotify_id,
+                  "youtube_id": self.youtube_id,
+                  "deezer_id": self.deezer_id,
+                  "release_date": self.release_date,
+                  "label": self.label,
+                  "acrid": self.acrid,
+                  "composers": self.composers,
+                  "lyricists": self.composers,
+                  "lyrics": self.lyrics,
+                  "language": self.language,
+                  "sample_begin_time_offset_ms": self.sample_begin_time_offset_ms,
+                  "sample_end_time_offset_ms": self.sample_end_time_offset_ms,
+                  "db_begin_time_offset_ms": self.db_begin_time_offset_ms,
+                  "db_end_time_offset_ms": self.db_end_time_offset_ms,
+                  }
         return result
 
 
 class CustomFileResult(BaseResult):
-    similar_results: Optional[List[CustomFile]] = None
-    audio_id: Optional[int] = None
-    bucket_id: Optional[int] = None
-    acrid: Optional[str] = None
-    primary_result: Optional[CustomFile] = None
+    def __init__(self,
+                 similar_results=None,
+                 audio_id=None,
+                 bucket_id=None,
+                 acrid=None,
+                 primary_result=None,
+                 filename=None,
+                 status_code=None,
+                 start_time_ms=None,
+                 end_time_ms=None,
+                 duration_ms=None,
+                 played_duration_ms=None,
+                 title=None,
+                 score=None,
+                 sample_begin_time_offset_ms=None,
+                 sample_end_time_offset_ms=None,
+                 db_begin_time_offset_ms=None,
+                 db_end_time_offset_ms=None):
+        super().__init__(filename, status_code, start_time_ms, end_time_ms, duration_ms, played_duration_ms, title,
+                         score, acrid, sample_begin_time_offset_ms, sample_end_time_offset_ms, db_begin_time_offset_ms,
+                         db_end_time_offset_ms)
+        self.similar_results = similar_results
+        self.audio_id = audio_id
+        self.bucket_id = bucket_id
+        self.acrid = acrid
+        self.primary_result = primary_result
 
-    def to_dict(self) -> dict:
-        result: dict = {"filename": from_union([from_str, from_none], self.filename),
-                        "status_code": from_union([from_int, from_none], self.status_code),
-                        "start_time_ms": from_union([from_str, from_int, from_none], self.start_time_ms),
-                        "end_time_ms": from_union([from_str, from_int, from_none], self.end_time_ms),
-                        "duration_ms": from_union([from_int, from_none], self.duration_ms),
-                        "played_duration_ms": from_union([from_int, from_none], self.played_duration_ms),
-                        "title": from_union([from_str, from_none], self.title),
-                        "score": from_union([from_int, from_none], self.score),
-                        "similar_results": from_union(
-                            [lambda x: from_list(lambda x: to_class(CustomFile, x), x), from_none],
-                            self.similar_results),
-                        "audio_id": from_union([from_int, from_str, from_none], self.audio_id),
-                        "bucket_id": from_union([from_int, from_str, from_none], self.bucket_id),
-                        "acrid": from_union([from_str, from_none], self.acrid),
-                        "sample_begin_time_offset_ms": from_union([from_int, from_none],
-                                                                  self.sample_begin_time_offset_ms),
-                        "sample_end_time_offset_ms": from_union([from_int, from_none],
-                                                                self.sample_end_time_offset_ms),
-                        "db_begin_time_offset_ms": from_union([from_int, from_none],
-                                                              self.db_begin_time_offset_ms),
-                        "db_end_time_offset_ms": from_union([from_int, from_none],
-                                                            self.db_end_time_offset_ms),
-                        }
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
+
+    def to_dict(self):
+        result = {"filename": self.filename,
+                  "status_code": self.status_code,
+                  "start_time_ms": self.start_time_ms,
+                  "end_time_ms": self.end_time_ms,
+                  "duration_ms": self.duration_ms,
+                  "played_duration_ms": self.played_duration_ms,
+                  "title": self.title,
+                  "score": self.score,
+                  "similar_results": [sr.to_dict() for sr in self.similar_results] if self.similar_results else None,
+                  "audio_id": self.audio_id,
+                  "bucket_id": self.bucket_id,
+                  "acrid": self.acrid,
+                  "sample_begin_time_offset_ms": self.sample_begin_time_offset_ms,
+                  "sample_end_time_offset_ms": self.sample_end_time_offset_ms,
+                  "db_begin_time_offset_ms": self.db_begin_time_offset_ms,
+                  "db_end_time_offset_ms": self.db_end_time_offset_ms,
+                  }
         return result
 
 
-def response_from_dict(s: Any) -> Response:
+def response_from_dict(s):
     return Response.from_dict(s)
 
 
-def response_to_dict(x: Response) -> Any:
-    return to_class(Response, x)
+def response_to_dict(x):
+    return Response.to_dict(x)

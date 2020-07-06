@@ -71,8 +71,8 @@ class ACRCloudRecognizer:
             print('recognize init(none access_key or access_secret)')
             sys.exit(1)
 
-        self.filter_energy_min = config.get('filter_energy_min', 100)
-        self.silence_energy_threshold = config.get('silence_energy_threshold', 1200)
+        self.filter_energy_min = config.get('filter_energy_min', 0)
+        self.silence_energy_threshold = config.get('silence_energy_threshold', 0)
         self.silence_rate_threshold = config.get('silence_rate_threshold', 0.7)
 
         # self.debug = config.get('debug', False)

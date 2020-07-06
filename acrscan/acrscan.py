@@ -6,8 +6,6 @@ from .acrcloud.recognizer import ACRCloudStatusCode
 from .models import *
 from typing import List
 import json
-import logging
-import os
 import csv
 from .utils import *
 import sys
@@ -60,7 +58,7 @@ class ACRCloudScan:
         start_time_s = int(start_time_ms / 1000)
 
         result = self._recognizer.recognize_by_file(filename, start_time_s, recognize_length_s)
-        logger.debug(result)
+        logger.debug(str(result).strip())
         result = json.loads(result)
         if result.get('code') == 3000:
             raise Exception('Http Error"')
@@ -100,7 +98,6 @@ class ACRCloudScan:
                 # sys.exit()
 
             music_result, custom_file_result = self._parse_response_to_result(filename, t_ms, response)
-
             music_results.append(music_result)
             custom_file_results.append(custom_file_result)
 
@@ -155,11 +152,11 @@ class ACRCloudScan:
                     music_result.isrc = primary_music_result.external_ids.isrc
                 if primary_music_result.external_ids.upc:
                     music_result.upc = primary_music_result.external_ids.upc
-                if primary_music_result.external_metadata.spotify:
+                if primary_music_result.external_metadata.spotify and primary_music_result.external_metadata.spotify.track:
                     music_result.spotify_id = primary_music_result.external_metadata.spotify.track.id
                 if primary_music_result.external_metadata.youtube:
                     music_result.youtube_id = primary_music_result.external_metadata.youtube.vid
-                if primary_music_result.external_metadata.deezer:
+                if primary_music_result.external_metadata.deezer and primary_music_result.external_metadata.deezer.track:
                     music_result.deezer_id = primary_music_result.external_metadata.deezer.track.id
                 if primary_music_result.release_date:
                     music_result.release_date = primary_music_result.release_date
@@ -185,7 +182,7 @@ class ACRCloudScan:
                         lyricists_names = "|##|".join(lyricists_names_list)
                         music_result.lyricists = lyricists_names
 
-                if primary_music_result.lyrics:
+                if primary_music_result.lyrics and primary_music_result.lyrics.copyrights:
                     lyrics_copyrights_list = []
                     for ly in primary_music_result.lyrics.copyrights:
                         lyrics_copyrights_list.append(ly)
@@ -206,7 +203,8 @@ class ACRCloudScan:
 
                 if self.with_duration:
                     if music_result.sample_begin_time_offset_ms is None:
-                        logger.error('Please contact us (support@acrcloud.com) to get the \'played duration\' feature')
+                        logger.error('Please contact us (support@acrcloud.com) to get the \'played duration\' feature '
+                                     'permission')
                     else:
                         music_result.played_duration_ms = \
                             music_result.sample_end_time_offset_ms - music_result.sample_begin_time_offset_ms
@@ -384,7 +382,7 @@ class ACRCloudScan:
 
         if results:
 
-            # 初始化
+            # init
             if results[0].sample_begin_time_offset_ms:
                 # 如果第一个 result 有识别到结果，把开始时间改为 sample_begin_time_offset_ms
                 results[0].start_time_ms = results[0].sample_begin_time_offset_ms
@@ -637,7 +635,7 @@ class ACRCloudScan:
 
         if not os.path.exists(target):
             logger.warning(f'Not Exist {target}')
-            return
+            sys.exit()
 
         total_music_results = []
         total_custom_file_results = []
