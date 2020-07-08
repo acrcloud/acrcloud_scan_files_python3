@@ -150,6 +150,7 @@ class ACRCloudScan:
 
                 for k in keys:
                     music_result.__setattr__(k, primary_music_result.__getattribute__(k))
+
                 if primary_music_result.external_ids.isrc:
                     music_result.isrc = primary_music_result.external_ids.isrc
                 if primary_music_result.external_ids.upc:
@@ -190,6 +191,8 @@ class ACRCloudScan:
                         lyrics_copyrights_list.append(ly)
                     lyrics_copyrights = "|##|".join(lyrics_copyrights_list)
                     music_result.lyrics = lyrics_copyrights
+                else:
+                    music_result.lyrics = None
 
                 if primary_music_result.artists:
                     artists_names_list = []
