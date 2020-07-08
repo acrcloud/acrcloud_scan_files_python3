@@ -338,7 +338,7 @@ class Lyrics:
             return Lyrics()
 
     def to_dict(self):
-        result = {"copyrights": [c for c in self.copyrights] if self.copyrights else None
+        result = {"copyrights": [c for c in self.copyrights if c] if self.copyrights else None
                   }
         return result
 
@@ -632,7 +632,7 @@ class MusicResult(BaseResult):
                   "acrid": self.acrid,
                   "composers": self.composers,
                   "lyricists": self.composers,
-                  "lyrics": self.lyrics,
+                  "lyrics": self.lyrics.to_dict() if self.lyrics else None,
                   "language": self.language,
                   "sample_begin_time_offset_ms": self.sample_begin_time_offset_ms,
                   "sample_end_time_offset_ms": self.sample_end_time_offset_ms,
