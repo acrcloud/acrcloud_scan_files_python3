@@ -234,8 +234,12 @@ class ACRCloudScan:
                 custom_file_result.primary_result = primary_result
 
                 if self.with_duration:
-                    custom_file_result.played_duration_ms = \
-                        custom_file_result.sample_end_time_offset_ms - custom_file_result.sample_begin_time_offset_ms
+                    if custom_file_result.sample_begin_time_offset_ms is None:
+                        logger.error('Please contact us (support@acrcloud.com) to get the \'played duration\' feature '
+                                     'permission')
+                    else:
+                        custom_file_result.played_duration_ms = \
+                            custom_file_result.sample_end_time_offset_ms - custom_file_result.sample_begin_time_offset_ms
 
         return music_result, custom_file_result
 
