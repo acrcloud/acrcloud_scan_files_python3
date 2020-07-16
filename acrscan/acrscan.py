@@ -30,6 +30,8 @@ class ACRCloudScan:
         self.filter_results = False
         self.split_results = False
         self.start_time_ms = 0 * 1000
+        self.is_fingerprint = False
+        self.fp_buffer = None
 
     def _get_file_duration_ms(self, filename: str) -> int:
         """
@@ -37,15 +39,10 @@ class ACRCloudScan:
         :param filename: the file position
         :return: the duration of the file (int)
         """
-        return self._recognizer.get_duration_ms_by_file(filename)
-
-    def get_file_duration_ms(self, filename: str) -> int:
-        """
-        get the file's total play duration
-        :param filename: the file position
-        :return: the duration of the file (int)
-        """
-        return self._recognizer.get_duration_ms_by_file(filename)
+        if self.is_fingerprint:
+            return self._recognizer.get_duration_ms_by_fpbuffer(self.fp_buffer)
+        else:
+            return self._recognizer.get_duration_ms_by_file(filename)
 
     @retry(stop_max_attempt_number=5, wait_exponential_multiplier=1000, wait_exponential_max=2000)
     def _recognize(self, filename: str, start_time_ms: int) -> dict:
@@ -58,8 +55,10 @@ class ACRCloudScan:
         recognize_length_s = int(self._recognize_length_ms / 1000)
 
         start_time_s = int(start_time_ms / 1000)
-
-        result = self._recognizer.recognize_by_file(filename, start_time_s, recognize_length_s)
+        if self.is_fingerprint:
+            result = self._recognizer.recognize_by_fpbuffer(self.fp_buffer, start_time_s, recognize_length_s)
+        else:
+            result = self._recognizer.recognize_by_file(filename, start_time_s, recognize_length_s)
         logger.debug(str(result).strip())
         result = json.loads(result)
         if result.get('code') == 3000:
@@ -74,6 +73,10 @@ class ACRCloudScan:
         """
         music_results = []
         custom_file_results = []
+        if self.is_fingerprint:
+            with open(filename, 'rb') as f:
+                self.fp_buffer = f.read()
+
         duration_ms = self._get_file_duration_ms(filename)
 
         if not duration_ms:
@@ -155,11 +158,13 @@ class ACRCloudScan:
                     music_result.isrc = primary_music_result.external_ids.isrc
                 if primary_music_result.external_ids.upc:
                     music_result.upc = primary_music_result.external_ids.upc
-                if primary_music_result.external_metadata.spotify and primary_music_result.external_metadata.spotify.track:
+                if primary_music_result.external_metadata.spotify and \
+                        primary_music_result.external_metadata.spotify.track:
                     music_result.spotify_id = primary_music_result.external_metadata.spotify.track.id
                 if primary_music_result.external_metadata.youtube:
                     music_result.youtube_id = primary_music_result.external_metadata.youtube.vid
-                if primary_music_result.external_metadata.deezer and primary_music_result.external_metadata.deezer.track:
+                if primary_music_result.external_metadata.deezer and \
+                        primary_music_result.external_metadata.deezer.track:
                     music_result.deezer_id = primary_music_result.external_metadata.deezer.track.id
                 if primary_music_result.release_date:
                     music_result.release_date = primary_music_result.release_date
@@ -239,7 +244,8 @@ class ACRCloudScan:
                                      'permission')
                     else:
                         custom_file_result.played_duration_ms = \
-                            custom_file_result.sample_end_time_offset_ms - custom_file_result.sample_begin_time_offset_ms
+                            custom_file_result.sample_end_time_offset_ms - \
+                            custom_file_result.sample_begin_time_offset_ms
 
         return music_result, custom_file_result
 
@@ -316,7 +322,7 @@ class ACRCloudScan:
                     }
 
                 self.results_counter[result.acrid]['count'] += 1
-                self.results_counter[result.acrid]['score_sum'] += result.score
+                self.results_counter[result.acrid]['score_sum'] += result.scoreACR_ERR_CODE_OK
 
         need_to_delete = []
         # 在音乐的title 相似 db_time 在递增的情况下，删除中间部分的 no result
@@ -641,7 +647,6 @@ class ACRCloudScan:
         :param target: target path
         :return:
         """
-
         if not os.path.exists(target):
             logger.warning(f'Not Exist {target}')
             sys.exit()

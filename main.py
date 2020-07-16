@@ -1,7 +1,7 @@
 #!/usr/bin/env python 
 # -*- coding: utf-8 -*-
 
-from acrscan.lib_downloader import download_lib
+from acrscan.lib_downloader import download_lib, current_platform
 
 try:
     from acrscan.acrscan import ACRCloudScan
@@ -11,6 +11,7 @@ except ImportError:
 import logging
 import yaml
 import click
+import sys
 
 with open('config.yaml', 'r') as f:
     try:
@@ -53,18 +54,26 @@ class OptionRequiredIf(click.Option):
               help='scan type')
 @click.option('--start-time-ms', '-s', default=0,
               help='scan start time')
-def main(target, output, output_format, with_duration, filter_results, split_results, scan_type, start_time_ms):
+@click.option('--is-fp/--not-fp', '-f', default=False,
+              help='scan fingerprint')
+def main(target, output, output_format, with_duration, filter_results, split_results, scan_type, start_time_ms, is_fp):
     ctx = click.get_current_context()
     if not any(v for v in ctx.params.values()):
         click.echo(ctx.get_help())
         ctx.exit()
 
+    platform = current_platform()
+    fp_support_platforms = ['linux_64', 'mac']
+    if is_fp and platform not in fp_support_platforms:
+        print('Your system not support scan fingerprint')
+        sys.exit()
     acr = ACRCloudScan(acrcloud_config)
     acr.with_duration = with_duration
     acr.filter_results = filter_results
     acr.split_results = split_results
     acr.scan_type = scan_type
     acr.start_time_ms = start_time_ms * 1000
+    acr.is_fingerprint = is_fp
     acr.scan_main(target, output, output_format)
 
 
