@@ -322,7 +322,7 @@ class ACRCloudScan:
                     }
 
                 self.results_counter[result.acrid]['count'] += 1
-                self.results_counter[result.acrid]['score_sum'] += result.scoreACR_ERR_CODE_OK
+                self.results_counter[result.acrid]['score_sum'] += result.score
 
         need_to_delete = []
         # 在音乐的title 相似 db_time 在递增的情况下，删除中间部分的 no result
