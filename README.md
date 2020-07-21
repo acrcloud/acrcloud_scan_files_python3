@@ -27,9 +27,9 @@ X64: [download and install Library(windows/vcredist_x64.exe)](https://www.micros
  
 
 ## Getting Started
-1. Install Python 3.7+
+1. Install Python 3 **(64-bit)**
 ```
-https://www.python.org/downloads/release/python-375/
+https://www.python.org/downloads/
 ```
 
 2. Clone this repository / Download repository zip file
