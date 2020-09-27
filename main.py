@@ -54,9 +54,12 @@ class OptionRequiredIf(click.Option):
               help='scan type')
 @click.option('--start-time-ms', '-s', default=0,
               help='scan start time')
+@click.option('--end-time-ms', '-e', default=0,
+              help='scan end time')
 @click.option('--is-fp/--not-fp', '-f', default=False,
               help='scan fingerprint')
-def main(target, output, output_format, with_duration, filter_results, split_results, scan_type, start_time_ms, is_fp):
+def main(target, output, output_format, with_duration, filter_results, split_results, scan_type, start_time_ms,
+         end_time_ms, is_fp):
     ctx = click.get_current_context()
     if not any(v for v in ctx.params.values()):
         click.echo(ctx.get_help())
@@ -73,6 +76,7 @@ def main(target, output, output_format, with_duration, filter_results, split_res
     acr.split_results = split_results
     acr.scan_type = scan_type
     acr.start_time_ms = start_time_ms * 1000
+    acr.end_time_ms = end_time_ms * 1000
     acr.is_fingerprint = is_fp
     acr.scan_main(target, output, output_format)
 

@@ -1,17 +1,17 @@
 #!/usr/bin/env python 
 # -*- coding: utf-8 -*-
 
+import csv
+import json
+import sys
+from typing import List
+
+from retrying import retry
+
 from .acrcloud.recognizer import ACRCloudRecognizer
 from .acrcloud.recognizer import ACRCloudStatusCode
 from .models import *
-from typing import List
-import json
-import logging
-import os
-import csv
 from .utils import *
-import sys
-from retrying import retry
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ class ACRCloudScan:
         self.filter_results = False
         self.split_results = False
         self.start_time_ms = 0 * 1000
+        self.end_time_ms = None
         self.is_fingerprint = False
         self.fp_buffer = None
 
@@ -52,6 +53,7 @@ class ACRCloudScan:
         :param start_time_ms: start time
         :return: recognize result (dict)
         """
+
         recognize_length_s = int(self._recognize_length_ms / 1000)
 
         start_time_s = int(start_time_ms / 1000)
@@ -77,7 +79,10 @@ class ACRCloudScan:
             with open(filename, 'rb') as f:
                 self.fp_buffer = f.read()
 
-        duration_ms = self._get_file_duration_ms(filename)
+        if self.end_time_ms:
+            duration_ms = self.end_time_ms
+        else:
+            duration_ms = self._get_file_duration_ms(filename)
 
         if not duration_ms:
             duration_ms = 0
@@ -249,7 +254,7 @@ class ACRCloudScan:
 
         return music_result, custom_file_result
 
-    def _compare_two_result(self, results, results_a_index: int, results_b_index: int) -> bool:
+    def _compare_two_results(self, results, results_a_index: int, results_b_index: int) -> bool:
         """
         compare two results, determine which should be selected
         :param results_a_index:
@@ -259,7 +264,6 @@ class ACRCloudScan:
         # first: compare the appear times
         results_a = results[results_a_index]
         results_b = results[results_b_index]
-
         results_a_count = self.results_counter[results_a.acrid].get('count')
         results_b_count = self.results_counter[results_b.acrid].get('count')
         if abs(results_a_count - results_b_count) > 1:
@@ -324,66 +328,64 @@ class ACRCloudScan:
                 self.results_counter[result.acrid]['count'] += 1
                 self.results_counter[result.acrid]['score_sum'] += result.score
 
-        need_to_delete = []
-        # 在音乐的title 相似 db_time 在递增的情况下，删除中间部分的 no result
-        for i in range(1, len(results) - 1):
-            # traverse the whole results list
-            if results[i].status_code == ACRCloudStatusCode.NO_RESULT_CODE:
+        index = 1
+        # traverse the whole results list
+        while True:
+            if index >= len(results) - 1:
+                break
+            current_result = results[index]
+            if current_result.status_code == ACRCloudStatusCode.NO_RESULT_CODE:
                 # if face a no result record. use fuzzywuzzy to determine the previous and next titles are similar
                 # because there are different versions of the same music in the database
                 # e.g. Hello, Hello (Remix), Hello (feat. acr)
-                if is_title_similar_or_equal(results[i - 1].title, results[i + 1].title,
-                                             self.filter_title_threshold):
 
+                if is_title_similar_or_equal(results[index - 1].title, results[index + 1].title,
+                                             self.filter_title_threshold):
                     # if the title is the same, should consider the time should be increased
                     # previous_db_end_time + current_played_duration < next_start_time
                     # cause may have some error, so if the difference value < 10 seconds
                     # it should be considered continuous
-
-                    if self._is_continuous(results, i - 1, i + 1):
-
+                    if self._is_continuous(results, index - 1, index + 1):
                         # Because different record may have different similar results, merge them.
-
-                        merged_results = self._merge_similar_results(results[i - 1].similar_results,
-                                                                     results[i + 1].similar_results)
-
-                        # if the two titles are similar use 'compare_two_result' to choose which should be selected
-
-                        need_to_delete.append(i)
-
-                        if self._compare_two_result(results, i - 1, i + 1):
+                        merged_results = self._merge_similar_results(results[index - 1].similar_results,
+                                                                     results[index + 1].similar_results)
+                        # 删除当前记录
+                        # delete current no result record
+                        results.pop(index)
+                        # 当前这个无结果的记录被删除 index 要 -1
+                        # 现在的 index 就是之前的 index+1
+                        if self._compare_two_results(results, index - 1, index):
                             # choose previous record
-                            results[i - 1].similar_results = merged_results
-                            results[i - 1].end_time_ms = results[i + 1].end_time_ms
-                            results[i - 1].db_end_time_offset_ms = results[i + 1].db_end_time_offset_ms
+                            results[index - 1].similar_results = merged_results
+                            results[index - 1].end_time_ms = results[index].end_time_ms
+                            results[index - 1].db_end_time_offset_ms = results[index].db_end_time_offset_ms
+                            # re-calculate the played_duration
+                            results[index - 1].played_duration_ms = results[index - 1].end_time_ms - results[
+                                index - 1].start_time_ms
 
-                            results[i - 1].played_duration_ms = results[i - 1].end_time_ms - results[
-                                i - 1].start_time_ms
-                            need_to_delete.append(i + 1)
+                            results.pop(index)
+                            # delete record behind no-result record 删除后面这个记录, 不需要修改index
+                            # no need to change the index
                         else:
                             # choose next record
-                            results[i + 1].similar_results = merged_results
-                            results[i + 1].start_time_ms = results[i - 1].start_time_ms
-                            results[i + 1].db_begin_time_offset_ms = results[i - 1].db_end_time_offset_ms
-                            results[i + 1].played_duration_ms = \
-                                results[i + 1].end_time_ms - results[i + 1].start_time_ms
+                            results[index].similar_results = merged_results
+                            results[index].start_time_ms = results[index - 1].start_time_ms
+                            results[index].db_begin_time_offset_ms = results[index - 1].db_begin_time_offset_ms
+                            results[index].played_duration_ms = \
+                                results[index].end_time_ms - results[index].start_time_ms
+                            results.pop(index - 1)
+                            index -= 1
+                            # delete previous record the index need - 1 删除了之前的记录，需要把index -1
 
-                            need_to_delete.append(i - 1)
-
+                        # when the current index been deleted, all the follows index should minus 1
+                        index -= 1
+            index += 1
         """
         1. played duration
         2. db_end_time
         """
-        # remove the no result and the repeating element
-        filtered_results = [i for j, i in enumerate(results) if j not in need_to_delete]
 
-        # filtered_results = [self.results[0], ]
-        #
-        # for i in range(1, len(self.results)):
-        #
-        #
-        # self.results = filtered_results
-        return filtered_results
+        return results
 
     def _swap_result(self):
         pass
@@ -402,15 +404,17 @@ class ACRCloudScan:
                 # 如果第一个 result 有识别到结果，把开始时间改为 sample_begin_time_offset_ms
                 results[0].start_time_ms = results[0].sample_begin_time_offset_ms
 
-            # 先把第 0 个元素给combined_results 初始化 combined_results
+            # 先把第 0 个元素给 merged_results 初始化 merged_results
             merged_results = [results[0], ]
 
+            results_count = len(results)
             # 从第 1 个元素开始遍历
-            for i in range(1, len(results)):
+            for i in range(1, results_count):
 
+                # 上一个结果
                 last_result = merged_results[-1]
 
-                # 不同文件,直接跳过。
+                # 不同文件,直接跳过后面的处理。
                 if results[i].filename != last_result.filename:
                     merged_results.append(results[i])
                     continue
@@ -423,8 +427,8 @@ class ACRCloudScan:
                 if results[i].status_code == ACRCloudStatusCode.ACR_ERR_CODE_OK:
                     if results[i].similar_results:
                         for sr in results[i].similar_results:
+                            # compare
                             if last_result.acrid == sr.acrid:
-
                                 results[i].title = sr.title
                                 results[i].acrid = sr.acrid
                                 if hasattr(results[i], 'audio_id'):
@@ -500,7 +504,19 @@ class ACRCloudScan:
                         results[i].start_time_ms = last_result.end_time_ms
                         results[i].played_duration_ms = results[i].end_time_ms - results[i].start_time_ms
 
+                    # 只有不一样的时候需要加入到结果中，因为一样的话只需要修改前一个结果
                     merged_results.append(results[i])
+
+                # # handle millisecond to second error
+                # # Forced change the next result's start_time to last result's end time
+                if i < results_count - 1:
+                    r = results[i]
+                    r_next = results[i + 1]
+                    if r.filename == r_next.filename:
+                        r_current_end = int(r.end_time_ms / 1000)
+                        r_next_start = int(r_next.start_time_ms / 1000)
+                        if r_current_end - r_next_start > 0:
+                            r_next.start_time_ms = r.end_time_ms
 
         return merged_results
 
@@ -563,6 +579,14 @@ class ACRCloudScan:
 
         keys = list(results[0].to_dict().keys())
         # using utf-8-sig: Avoid using excel display wrong characters. F Microsoft.
+
+        keys.insert(3, 'start_time')
+        keys.insert(4, 'end_time')
+        # move start_time_ms and end_time_ms to the end
+        keys.remove('start_time_ms')
+        keys.remove('end_time_ms')
+        keys += ['start_time_ms', 'end_time_ms']
+
         report_full_filename = f'{report_filename}{suffix}'
 
         with open(report_full_filename, 'w', encoding="utf-8-sig") as f:
@@ -571,8 +595,8 @@ class ACRCloudScan:
             for r in results:
                 res = r.to_dict()
                 res['similar_results'] = '|##|'.join(self._parse_similar_results(res['similar_results']))
-                res['start_time_ms'] = get_human_readable_time(res['start_time_ms'] / 1000)
-                res['end_time_ms'] = get_human_readable_time(res['end_time_ms'] / 1000)
+                res['start_time'] = get_human_readable_time(res['start_time_ms'] / 1000)
+                res['end_time'] = get_human_readable_time(res['end_time_ms'] / 1000)
                 dict_writer.writerow(res)
 
         logger.info(f'The results are exported in {report_full_filename}')
@@ -587,6 +611,13 @@ class ACRCloudScan:
         """
         suffix = '.csv'
         keys = list(results[0].to_dict().keys())
+        keys.insert(3, 'start_time')
+        keys.insert(4, 'end_time')
+        # move start_time_ms and end_time_ms to the end
+        keys.remove('start_time_ms')
+        keys.remove('end_time_ms')
+        keys += ['start_time_ms', 'end_time_ms']
+
         report_filenames = []
         tmp = ''
         for r in results:
@@ -600,12 +631,13 @@ class ACRCloudScan:
 
         for r in results:
             report_full_filename = f'{report_filename}_{r.filename}{suffix}'
+
             with open(report_full_filename, 'a', encoding="utf-8-sig") as f:
                 dict_writer = csv.DictWriter(f, keys)
                 res = r.to_dict()
                 res['similar_results'] = '|##|'.join(self._parse_similar_results(res['similar_results']))
-                res['start_time_ms'] = get_human_readable_time(res['start_time_ms'] / 1000)
-                res['end_time_ms'] = get_human_readable_time(res['end_time_ms'] / 1000)
+                res['start_time'] = get_human_readable_time(res['start_time_ms'] / 1000)
+                res['end_time'] = get_human_readable_time(res['end_time_ms'] / 1000)
                 dict_writer.writerow(res)
 
         for i in report_filenames:

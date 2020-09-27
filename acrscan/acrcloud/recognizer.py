@@ -17,7 +17,6 @@ import hashlib
 import urllib.request
 import urllib.parse
 import datetime
-
 import acrcloud_extr_tool
 
 '''
@@ -77,8 +76,8 @@ class ACRCloudRecognizer:
         self.silence_energy_threshold = config.get('silence_energy_threshold', 1200)
         self.silence_rate_threshold = config.get('silence_rate_threshold', 0.7)
 
-        if self.debug:
-            acrcloud_extr_tool.set_debug()
+        # if self.debug:
+        #     acrcloud_extr_tool.set_debug()
 
     def post_multipart(self, url, fields, files, timeout):
         content_type, body = self.encode_multipart_formdata(fields, files)

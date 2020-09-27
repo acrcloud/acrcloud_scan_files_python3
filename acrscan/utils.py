@@ -92,7 +92,3 @@ def is_folder(path: str) -> bool:
     if full_path and not extension:
         return True
     return False
-
-if __name__ == '__main__':
-    a = get_human_readable_time(1207)
-    print(a)
