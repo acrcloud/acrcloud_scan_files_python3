@@ -179,6 +179,9 @@ class ACRCloudScan:
                 if primary_music_result.language:
                     music_result.language = primary_music_result.language
 
+                if primary_music_result.album.name:
+                    music_result.album_name = primary_music_result.album.name
+
                 if primary_music_result.contributors:
                     if primary_music_result.contributors.composers:
                         composers_names_list = []

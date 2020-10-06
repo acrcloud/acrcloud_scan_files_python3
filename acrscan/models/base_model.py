@@ -559,6 +559,7 @@ class BaseResult:
 class MusicResult(BaseResult):
 
     def __init__(self,
+                 album_name=None,
                  artists_names=None,
                  isrc=None,
                  upc=None,
@@ -589,6 +590,7 @@ class MusicResult(BaseResult):
         super().__init__(filename, status_code, start_time_ms, end_time_ms, duration_ms, played_duration_ms, title,
                          score, acrid, sample_begin_time_offset_ms, sample_end_time_offset_ms, db_begin_time_offset_ms,
                          db_end_time_offset_ms)
+        self.album_name = album_name
         self.artists_names = artists_names
         self.isrc = isrc
         self.upc = upc
@@ -621,6 +623,7 @@ class MusicResult(BaseResult):
                   "title": self.title,
                   "score": self.score,
                   "similar_results": [sr.to_dict() for sr in self.similar_results] if self.similar_results else None,
+                  "album_name": self.album_name,
                   "artists_names": self.artists_names,
                   "isrc": self.isrc,
                   "upc": self.upc,
