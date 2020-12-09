@@ -12,5 +12,5 @@ RUN apt-get update \
 && rm -rf /var/lib/apt/lists/*
 
 RUN pip install -r requirements.txt
-RUN python3 /acr_scan_tool/main.py --help
+RUN python /acr_scan_tool/main.py --help
 ENTRYPOINT ["main.py"]
