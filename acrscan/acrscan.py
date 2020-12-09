@@ -696,8 +696,13 @@ class ACRCloudScan:
             total_custom_file_results = custom_file_results
         elif os.path.isdir(target):
             # scan folder
-            filenames = [f'{target}/{i}' for i in os.listdir(target)]
-            for file in filenames:
+            file_list = []
+            for root, dirnames, filenames in os.walk(target):
+                for filename in filenames:
+                    full_filename = os.path.join(root, filename)
+                    file_list.append(full_filename)
+            logger.info(f'file list: {file_list}')
+            for file in file_list:
                 music_results, custom_file_results = self._scan(file)
                 total_music_results += music_results
                 total_custom_file_results += custom_file_results
