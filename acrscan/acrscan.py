@@ -106,6 +106,9 @@ class ACRCloudScan:
             if response_code != 1001 and response_code != 0 and response_code != 2006:
                 logger.error(f'Code:{response_code} Message: {response.status.msg}')
                 # sys.exit()
+            if response_code == ACRCloudStatusCode.DECODE_ERROR_CODE:
+                logger.error(f'Code:{response_code} Message: {response.status.msg}, skip file {filename}')
+                break
 
             music_result, custom_file_result = self._parse_response_to_result(filename, t_ms, response)
             music_results.append(music_result)
@@ -696,8 +699,13 @@ class ACRCloudScan:
             total_custom_file_results = custom_file_results
         elif os.path.isdir(target):
             # scan folder
-            filenames = [f'{target}/{i}' for i in os.listdir(target)]
-            for file in filenames:
+            file_list = []
+            for root, dirnames, filenames in os.walk(target):
+                for filename in filenames:
+                    full_filename = os.path.join(root, filename)
+                    file_list.append(full_filename)
+            logger.info(f'file list: {file_list}')
+            for file in file_list:
                 music_results, custom_file_results = self._scan(file)
                 total_music_results += music_results
                 total_custom_file_results += custom_file_results
