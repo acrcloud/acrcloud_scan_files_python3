@@ -48,7 +48,7 @@ class OptionRequiredIf(click.Option):
               help='Add played duration to the result')
 @click.option('--filter-results/--no-filter', default=False,
               help='Enable filter.(It must be used when the with-duration option is on)', cls=OptionRequiredIf)
-@click.option('--split-results/--no-split', '-s', default=False,
+@click.option('--split-results/--no-split', '-p', default=False,
               help='Each audio/video file generate a report')
 @click.option('--scan-type', '-c', type=click.Choice(['music', 'custom', 'both']), default='both',
               help='scan type')
