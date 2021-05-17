@@ -58,18 +58,23 @@ Usage: main.py [OPTIONS]
 Options:
   -t, --target TEXT               The target need to scan (a folder or a
                                   file).  [required]
+
   -o, --output TEXT               Output result to this folder. (Must be a
                                   folder path)
+
   --format [csv|json]             output format.(csv or json)
   -w, --with-duration / --no-duration
                                   Add played duration to the result
   --filter-results / --no-filter  Enable filter.(It must be used when the
                                   with-duration option is on)
-  -s, --split-results / --no-split
+
+  -p, --split-results / --no-split
                                   Each audio/video file generate a report
   -c, --scan-type [music|custom|both]
                                   scan type
   -s, --start-time-ms INTEGER     scan start time
+  -e, --end-time-ms INTEGER       scan end time
+  -f, --is-fp / --not-fp          scan fingerprint
   --help                          Show this message and exit.
 ```
 
