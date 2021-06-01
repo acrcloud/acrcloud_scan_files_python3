@@ -108,7 +108,6 @@ class ACRCloudScan:
                 # sys.exit()
             if response_code == ACRCloudStatusCode.DECODE_ERROR_CODE:
                 logger.error(f'Code:{response_code} Message: {response.status.msg}, skip file {filename}')
-                break
 
             music_result, custom_file_result = self._parse_response_to_result(filename, t_ms, response)
             music_results.append(music_result)
