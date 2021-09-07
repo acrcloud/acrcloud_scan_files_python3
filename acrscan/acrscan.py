@@ -22,6 +22,7 @@ class ACRCloudScan:
         self.config = acrcloud_config  # config
         self._recognizer = ACRCloudRecognizer(self.config)
         self._recognize_length_ms = 10 * 1000
+        self.interval_length_ms = 10 * 1000
         self.filter_title_threshold = 75
         self.filter_time_threshold = self._recognize_length_ms
         self.results_counter = {}
@@ -87,7 +88,7 @@ class ACRCloudScan:
         if not duration_ms:
             duration_ms = 0
 
-        duration_left_ms = duration_ms % self._recognize_length_ms
+        duration_left_ms = duration_ms % self.interval_length_ms
 
         # ignore extra fragment (if this fragment smaller than 2 seconds)
         if duration_left_ms < 2000:
@@ -98,7 +99,7 @@ class ACRCloudScan:
         logger.info(
             f'{filename} File total duration {duration_ms / 1000} seconds, Scan from 0 to {scan_duration_ms / 1000}')
 
-        for t_ms in range(self.start_time_ms, scan_duration_ms, self._recognize_length_ms):
+        for t_ms in range(self.start_time_ms, scan_duration_ms, self.interval_length_ms):
             rec_result = self._recognize(filename, t_ms)
             logger.info("progress: {}/{}".format(t_ms, scan_duration_ms))
             response = Response.from_dict(rec_result)
