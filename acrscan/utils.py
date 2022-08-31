@@ -50,6 +50,9 @@ def is_title_similar_or_equal(title_a: str, title_b: str, threshold: int) -> boo
     :return:
     """
     # avoid None == None and Avoid computing
+    if not title_a or not title_b:
+        return False
+    
     if title_a == title_b:
         return True
 
