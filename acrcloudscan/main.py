@@ -18,7 +18,8 @@ CONFIGS_FILES = ['config.yaml', "~/.acrcloudscan/config.yaml", "/etc/acrcloud/sc
 
 config_file = None
 for conf in CONFIGS_FILES:
-    if os.path.exists(conf):
+    conf_path = os.path.expanduser(conf)
+    if os.path.exists(conf_path):
         config_file = conf
         break
 
