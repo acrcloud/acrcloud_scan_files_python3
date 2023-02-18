@@ -12,8 +12,16 @@ import logging
 import yaml
 import click
 import sys
+import os
 
-with open('config.yaml', 'r') as f:
+CONFIGS_FILES = ["~/.acrcloud/config.yaml" , 'config.yaml']
+
+for conf in CONFIGS_FILES:
+    if os.path.exists(conf):
+        config_file = conf
+        break
+
+with open(config_file, 'r') as f:
     try:
         config_dict = yaml.safe_load(f)
     except yaml.YAMLError as exc:
