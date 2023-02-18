@@ -1,13 +1,13 @@
 #!/usr/bin/env python 
 # -*- coding: utf-8 -*-
 
-from acrscan.lib_downloader import download_lib, current_platform
+from .acrscan.lib_downloader import download_lib, current_platform
 
 try:
-    from acrscan.acrscan import ACRCloudScan
+    from .acrscan.acrscan import ACRCloudScan
 except ImportError:
     download_lib()
-    from acrscan.acrscan import ACRCloudScan
+    from .acrscan.acrscan import ACRCloudScan
 import logging
 import yaml
 import click

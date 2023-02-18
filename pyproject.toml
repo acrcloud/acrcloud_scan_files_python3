@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acrcloudscan"
+version = "0.0.1"
+dependencies = [
+    "retrying",
+    "click",
+    "python-dateutil",
+    "tqdm",
+    "fuzzywuzzy",
+    "ffmpeg-python",
+    "PyYAML",
+    "urllib3"
+]
+
+[project.scripts]
+acrcloudscan = "acrcloudscan.main:main"
