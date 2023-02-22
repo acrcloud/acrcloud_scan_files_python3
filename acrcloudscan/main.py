@@ -20,7 +20,7 @@ config_file = None
 for conf in CONFIGS_FILES:
     conf_path = os.path.expanduser(conf)
     if os.path.exists(conf_path):
-        config_file = conf
+        config_file = conf_path
         break
 
 if config_file is None:
