@@ -55,12 +55,12 @@ $ python3 -m pip install -r requirements.txt
 ```
 
 
-4. Copy `config.yaml.example` and save as `config.yaml`. Change the content of `config.yaml`, fill in your host, access_key and access_secret.
+4. Copy `config.yaml.example` and save as `config.yaml`. Change the content of `config.yaml`, fill in your host, access_key and access_secret. You can save on ̣̣`~/.acrcloudscan/config.yaml` or `/etc/acrcloud/scan/config.yaml`
 
 
 5. Run the script to scan your audio/video files:
 ```bash
-$ python main.py -t ~/test/test.mp4
+$ acrscancloud -t ~/test/test.mp4
 ```
 ## Usage
 
@@ -97,12 +97,12 @@ Options:
 - with played duration:
 
 ```bash
-$ python main.py -t ~/test/test.mp4 -w
+$ acrcloudscan -t ~/test/test.mp4 -w
 ```
 - with played duration and filter results
 
 ```bash
-$ python main.py -t ~/test/test.mp4 -w --filter-results
+$ acrcloudscan -t ~/test/test.mp4 -w --filter-results
 ```
 
 ## Using Docker
