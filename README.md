@@ -33,9 +33,8 @@ Supported Format:
 
 If you are using Windows. Please make sure you've installed Microsoft Visual C++ runtime
 
-X86: [download and install Library(windows/vcredist_x86.exe)](https://www.microsoft.com/en-us/download/details.aspx?id=5555)
- 
-X64: [download and install Library(windows/vcredist_x64.exe)](https://www.microsoft.com/en-us/download/details.aspx?id=14632)
+X86: [download and install Library(windows/vcredist_x86.exe)](https://github.com/acrcloud/acrcloud_sdk_python/blob/master/windows/vcredist_x86.exe)<br>
+x64: [download and install Library(windows/vcredist_x64.exe)](https://github.com/acrcloud/acrcloud_sdk_python/blob/master/windows/vcredist_x64.exe)
  
 
 ## Getting Started
