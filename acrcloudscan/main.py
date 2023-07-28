@@ -1,25 +1,31 @@
 #!/usr/bin/env python 
 # -*- coding: utf-8 -*-
 
-from acrscan.lib_downloader import download_lib, current_platform
+from .acrscan.lib_downloader import download_lib, current_platform
 
 try:
-    from acrscan.acrscan import ACRCloudScan
+    from .acrscan.acrscan import ACRCloudScan
 except ImportError:
     download_lib()
-    from acrscan.acrscan import ACRCloudScan
+    from .acrscan.acrscan import ACRCloudScan
 import logging
 import yaml
 import click
 import sys
 import os
 
-CONFIGS_FILES = ["~/.acrcloud/config.yaml" , 'config.yaml']
+CONFIGS_FILES = ['config.yaml', "~/.acrcloudscan/config.yaml", "/etc/acrcloud/scan/config.yaml"]
 
+config_file = None
 for conf in CONFIGS_FILES:
-    if os.path.exists(conf):
-        config_file = conf
+    conf_path = os.path.expanduser(conf)
+    if os.path.exists(conf_path):
+        config_file = conf_path
         break
+
+if config_file is None:
+    logging.error("Please make sure you fill the config.yaml in some of the following paths: {}".format(CONFIGS_FILES))
+    raise ValueError()
 
 with open(config_file, 'r') as f:
     try:
